@@ -4,7 +4,9 @@ import { Brain, Trophy, TrendingUp } from 'lucide-react';
 import { LandingPage } from './components/pages/LandingPage';
 import { ChatPage } from './components/pages/ChatPage';
 import { StudyPlanPage } from './components/pages/StudyPlanPage';
-import { QuizPage } from './components/pages/QuizPage';
+import { FlashcardsPage } from './components/pages/FlashcardsPage';
+import { auth } from './lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { ProfilePage } from './components/pages/ProfilePage';
 import { OnboardingPage } from './components/pages/OnboardingPage';
 import type { AppState, User } from './lib/types';
@@ -16,6 +18,7 @@ const defaultUser: User = {
   email: '',
   points: 0,
   streak: 0,
+  subjects: [],
   topics: {},
   createdAt: new Date(),
   lastActive: new Date(),
@@ -32,18 +35,38 @@ function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('ai-study-buddy-user');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        user.createdAt = new Date(user.createdAt);
-        user.lastActive = new Date(user.lastActive);
-        setAppState(prev => ({ ...prev, user }));
+    const unsub = onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser) {
+        const newUser: User = {
+          id: fbUser.uid,
+          name: fbUser.displayName || '',
+          email: fbUser.email || '',
+          points: 0,
+          streak: 0,
+          subjects: [],
+          topics: {},
+          createdAt: new Date(),
+          lastActive: new Date(),
+        };
+        setAppState(prev => ({ ...prev, user: newUser }));
+        localStorage.setItem('ai-study-buddy-user', JSON.stringify(newUser));
         setCurrentPage('chat');
-      } catch (error) {
-        console.error('Error parsing saved user:', error);
+      } else {
+        const savedUser = localStorage.getItem('ai-study-buddy-user');
+        if (savedUser) {
+          try {
+            const user = JSON.parse(savedUser);
+            user.createdAt = new Date(user.createdAt);
+            user.lastActive = new Date(user.lastActive);
+            setAppState(prev => ({ ...prev, user }));
+            setCurrentPage('chat');
+          } catch (error) {
+            console.error('Error parsing saved user:', error);
+          }
+        }
       }
-    }
+    });
+    return () => unsub();
   }, []);
 
   const handleUserCreate = (userData: Partial<User>) => {
@@ -61,9 +84,11 @@ function App() {
   };
 
   const handleLogout = () => {
-    setAppState(prev => ({ ...prev, user: null, currentSession: null }));
-    localStorage.removeItem('ai-study-buddy-user');
-    setCurrentPage('landing');
+    signOut(auth).finally(() => {
+      setAppState(prev => ({ ...prev, user: null, currentSession: null }));
+      localStorage.removeItem('ai-study-buddy-user');
+      setCurrentPage('landing');
+    });
   };
 
   if (showOnboarding) {
@@ -87,6 +112,7 @@ function App() {
             email: 'demo@example.com',
             points: 150,
             streak: 3,
+            subjects: ['Calculus', 'Algebra'],
             topics: {
               'calculus': { attempts: 8, correct: 6, lastSeen: Date.now(), strength: 0.75 },
               'algebra': { attempts: 5, correct: 3, lastSeen: Date.now(), strength: 0.6 },
@@ -147,7 +173,7 @@ function App() {
             {[
               { id: 'chat', label: 'Ask & Learn', path: '/chat' },
               { id: 'study', label: 'Study Plan', path: '/study' },
-              { id: 'quiz', label: 'Quiz', path: '/quiz' },
+              { id: 'flashcards', label: 'Flashcards', path: '/flashcards' },
               { id: 'profile', label: 'Profile', path: '/profile' },
             ].map((item) => (
               <button
@@ -188,8 +214,8 @@ function App() {
                 onStateChange={setAppState}
               />
             )}
-            {currentPage === 'quiz' && (
-              <QuizPage 
+            {currentPage === 'flashcards' && (
+              <FlashcardsPage 
                 user={appState.user}
                 onStateChange={setAppState}
               />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, ArrowLeft, ArrowRight } from 'lucide-react';
 import type { User } from '../../lib/types';
+import { signUpWithEmail, signInWithEmail } from '../../lib/auth';
 
 interface OnboardingPageProps {
   onComplete: (userData: Partial<User>) => void;
@@ -15,12 +16,26 @@ export function OnboardingPage({ onComplete, onSkip }: OnboardingPageProps) {
     email: '',
     subjects: [] as string[]
   });
+  const [password, setPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < 3) {
       setStep(step + 1);
     } else {
-      onComplete(formData);
+      try {
+        setError(null);
+        if (isLogin) {
+          await signInWithEmail(formData.email, password);
+        } else {
+          await signUpWithEmail(formData.name, formData.email, password);
+        }
+        onComplete(formData);
+      } catch (e: unknown) {
+        const error = e as Error;
+        setError(error?.message || 'Authentication failed');
+      }
     }
   };
 
@@ -71,6 +86,22 @@ export function OnboardingPage({ onComplete, onSkip }: OnboardingPageProps) {
                 className="input-field text-lg"
                 autoFocus
               />
+              <div className="mt-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Password</h3>
+                <input
+                  type="password"
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field text-lg"
+                />
+                <div className="text-sm text-gray-500 mt-2">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={isLogin} onChange={(e) => setIsLogin(e.target.checked)} />
+                    I already have an account (Log in)
+                  </label>
+                </div>
+              </div>
             </div>
           )}
 
@@ -101,6 +132,9 @@ export function OnboardingPage({ onComplete, onSkip }: OnboardingPageProps) {
           )}
         </div>
 
+        {error && (
+          <div className="text-red-600 text-sm mb-4">{error}</div>
+        )}
         <div className="flex justify-between">
           <button onClick={step === 1 ? onSkip : handleBack} className="btn-secondary flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />

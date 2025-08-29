@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, MessageCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import type { User, AppState, ChatMessage } from '../../lib/types';
+import { db } from '../../lib/firebase';
+import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 
 interface ChatPageProps {
   user: User;
@@ -40,8 +42,18 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
     setInputValue('');
     setIsLoading(true);
 
+    // Persist to Firestore: ensure session document exists then add the message
+    const sessionId = `${user.id}-chat-${new Date().toISOString().slice(0,10)}`;
+    const sessionRef = doc(db, 'users', user.id, 'chatSessions', sessionId);
+    await setDoc(sessionRef, { createdAt: serverTimestamp(), userId: user.id }, { merge: true });
+    await addDoc(collection(db, 'users', user.id, 'chatSessions', sessionId, 'messages'), {
+      role: 'user',
+      content: inputValue,
+      ts: serverTimestamp(),
+    });
+
     // Simulate AI response
-    setTimeout(() => {
+    setTimeout(async () => {
       const aiResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -52,6 +64,13 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
       
       setMessages(prev => [...prev, aiResponse]);
       setIsLoading(false);
+
+      await addDoc(collection(db, 'users', user.id, 'chatSessions', sessionId, 'messages'), {
+        role: 'assistant',
+        content: aiResponse.content,
+        confidence: aiResponse.confidence,
+        ts: serverTimestamp(),
+      });
     }, 1500);
   };
 

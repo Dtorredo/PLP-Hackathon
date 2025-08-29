@@ -10,6 +10,7 @@ export interface User {
   email: string;
   points: number;
   streak: number;
+  subjects: string[];
   topics: TopicProgress;
   createdAt: Date;
   lastActive: Date;

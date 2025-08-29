@@ -15,6 +15,7 @@ interface CardStackProps<T extends StackableItem> {
   containerClassName?: string;
   cardClassName?: string;
   stackConfig?: Partial<StackConfig>;
+  onCardSentToBack?: (id: T["id"]) => void;
 }
 
 const defaultConfig: StackConfig = {
@@ -29,6 +30,7 @@ export function CardStack<T extends StackableItem>({
   containerClassName = "relative h-52 w-52",
   cardClassName = "absolute h-52 w-52 cursor-grab",
   stackConfig: userConfig = {},
+  onCardSentToBack,
 }: CardStackProps<T>) {
   const [items, setItems] = useState(initialItems);
   const config = { ...defaultConfig, ...userConfig };
@@ -41,6 +43,7 @@ export function CardStack<T extends StackableItem>({
       newItems.unshift(item);
       return newItems;
     });
+    onCardSentToBack?.(id);
   };
 
   return (

@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
-import { Brain, BookOpen, Target, Users, Sparkles, ArrowRight } from 'lucide-react';
+import { Brain, BookOpen, Target, Users, Sparkles, ArrowRight, LogIn } from 'lucide-react';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../../lib/firebase';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -7,6 +9,14 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onGetStarted, onDemo }: LandingPageProps) {
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      onGetStarted();
+    } catch (e) {
+      console.error('Google sign-in failed', e);
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -54,6 +64,16 @@ export function LandingPage({ onGetStarted, onDemo }: LandingPageProps) {
               className="btn-secondary text-lg px-8 py-4"
             >
               Try Demo
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleGoogleSignIn}
+              className="bg-white text-gray-800 border border-gray-200 rounded-lg px-6 py-4 flex items-center justify-center gap-2 shadow-sm hover:shadow transition"
+            >
+              <LogIn className="w-5 h-5 text-primary-600" />
+              Sign in with Google
             </motion.button>
           </div>
         </motion.div>

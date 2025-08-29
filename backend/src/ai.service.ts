@@ -236,4 +236,134 @@ Please respond with:
       completedDays: []
     };
   }
+
+  async generateFlashcards(topic: string, count: number = 5): Promise<any[]> {
+    const topicLower = topic.toLowerCase();
+    
+    // Use Hugging Face to generate flashcards if available
+    if (this.hf) {
+      try {
+        const modelToUse = this.modelId || 'mistralai/Mixtral-8x7B-Instruct-v0.1';
+        const prompt = `Generate ${count} educational flashcards about ${topic}. 
+Format each as: "Question: [question] Answer: [answer]"
+Make them progressively harder, covering fundamentals to advanced concepts.
+Focus on key principles, formulas, and problem-solving approaches.`;
+        
+        const completion = await this.hf.textGeneration({
+          model: modelToUse,
+          inputs: prompt,
+          parameters: {
+            max_new_tokens: 500,
+            temperature: 0.7,
+            top_p: 0.95,
+            do_sample: true,
+            return_full_text: false
+          }
+        });
+
+        const answerText = completion.generated_text?.trim() || '';
+        return this.parseFlashcardsFromAI(answerText, topic, count);
+      } catch (error) {
+        console.error('Hugging Face flashcard generation failed, falling back:', error);
+      }
+    }
+
+    // Fallback to curated flashcards based on topic
+    return this.getFallbackFlashcards(topic, count);
+  }
+
+  private parseFlashcardsFromAI(aiText: string, topic: string, count: number): any[] {
+    const flashcards = [];
+    const lines = aiText.split('\n');
+    let currentQuestion = '';
+    let currentAnswer = '';
+    
+    for (const line of lines) {
+      if (line.toLowerCase().includes('question:')) {
+        if (currentQuestion && currentAnswer) {
+          flashcards.push({
+            id: flashcards.length + 1,
+            question: currentQuestion.trim(),
+            answer: currentAnswer.trim(),
+            topic: topic
+          });
+          if (flashcards.length >= count) break;
+        }
+        currentQuestion = line.replace(/question:/i, '').trim();
+        currentAnswer = '';
+      } else if (line.toLowerCase().includes('answer:')) {
+        currentAnswer = line.replace(/answer:/i, '').trim();
+      }
+    }
+    
+    // Add the last card if we have both parts
+    if (currentQuestion && currentAnswer && flashcards.length < count) {
+      flashcards.push({
+        id: flashcards.length + 1,
+        question: currentQuestion.trim(),
+        answer: currentAnswer.trim(),
+        topic: topic
+      });
+    }
+    
+    return flashcards.length > 0 ? flashcards : this.getFallbackFlashcards(topic, count);
+  }
+
+  private getFallbackFlashcards(topic: string, count: number): any[] {
+    const fallbackCards = {
+      'calculus': [
+        { question: 'What is the derivative of x²?', answer: '2x' },
+        { question: 'What does the chain rule state?', answer: 'If f(x) = g(h(x)), then f\'(x) = g\'(h(x)) · h\'(x)' },
+        { question: 'What is the integral of 2x?', answer: 'x² + C' },
+        { question: 'What is the derivative of sin(x)?', answer: 'cos(x)' },
+        { question: 'What is the power rule for derivatives?', answer: 'd/dx(x^n) = n·x^(n-1)' }
+      ],
+      'algebra': [
+        { question: 'What is the quadratic formula?', answer: 'x = (-b ± √(b² - 4ac)) / 2a' },
+        { question: 'How do you solve 2x + 5 = 13?', answer: 'Subtract 5 from both sides: 2x = 8, then divide by 2: x = 4' },
+        { question: 'What is factoring?', answer: 'Breaking down a polynomial into simpler factors' },
+        { question: 'What is the slope-intercept form?', answer: 'y = mx + b' },
+        { question: 'How do you find the slope between two points?', answer: 'm = (y₂ - y₁) / (x₂ - x₁)' }
+      ],
+      'physics': [
+        { question: 'What is Newton\'s First Law?', answer: 'An object at rest stays at rest unless acted upon by an external force' },
+        { question: 'What is the formula for kinetic energy?', answer: 'KE = ½mv²' },
+        { question: 'What is acceleration?', answer: 'Rate of change of velocity with respect to time' },
+        { question: 'What is the law of conservation of energy?', answer: 'Energy cannot be created or destroyed, only transformed' },
+        { question: 'What is the formula for force?', answer: 'F = ma' }
+      ],
+      'chemistry': [
+        { question: 'What is the chemical symbol for water?', answer: 'H₂O' },
+        { question: 'What is the atomic number of carbon?', answer: '6' },
+        { question: 'What is a molecule?', answer: 'Two or more atoms bonded together' },
+        { question: 'What is the pH scale range?', answer: '0 to 14' },
+        { question: 'What is a chemical reaction?', answer: 'Process where substances are transformed into new substances' }
+      ],
+      'biology': [
+        { question: 'What is the powerhouse of the cell?', answer: 'Mitochondria' },
+        { question: 'What is DNA?', answer: 'Deoxyribonucleic acid, the genetic material' },
+        { question: 'What is photosynthesis?', answer: 'Process where plants convert sunlight into energy' },
+        { question: 'What is evolution?', answer: 'Change in species over time through natural selection' },
+        { question: 'What is homeostasis?', answer: 'Maintenance of stable internal conditions' }
+      ],
+      'computer science': [
+        { question: 'What is an algorithm?', answer: 'A step-by-step procedure for solving a problem' },
+        { question: 'What is a variable?', answer: 'A container for storing data values' },
+        { question: 'What is a function?', answer: 'A reusable block of code that performs a specific task' },
+        { question: 'What is recursion?', answer: 'A function calling itself' },
+        { question: 'What is object-oriented programming?', answer: 'Programming paradigm based on objects containing data and code' }
+      ]
+    };
+
+    const topicKey = Object.keys(fallbackCards).find(key => 
+      topic.toLowerCase().includes(key.toLowerCase())
+    ) || 'calculus';
+
+    return fallbackCards[topicKey].slice(0, count).map((card, index) => ({
+      id: index + 1,
+      question: card.question,
+      answer: card.answer,
+      topic: topic
+    }));
+  }
 }
