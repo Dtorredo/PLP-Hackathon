@@ -1,22 +1,12 @@
 import { motion } from 'framer-motion';
 import { Brain, BookOpen, Target, Users, Sparkles, ArrowRight, LogIn } from 'lucide-react';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../../lib/firebase';
 
 interface LandingPageProps {
-  onGetStarted: () => void;
-  onDemo: () => void;
+  onSignUp: () => void;
+  onSignIn: () => void;
 }
 
-export function LandingPage({ onGetStarted, onDemo }: LandingPageProps) {
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-      onGetStarted();
-    } catch (e) {
-      console.error('Google sign-in failed', e);
-    }
-  };
+export function LandingPage({ onSignUp, onSignIn }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -50,7 +40,7 @@ export function LandingPage({ onGetStarted, onDemo }: LandingPageProps) {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onGetStarted}
+              onClick={onSignUp}
               className="btn-primary text-lg px-8 py-4 flex items-center justify-center gap-2"
             >
               Get Started Free
@@ -60,20 +50,11 @@ export function LandingPage({ onGetStarted, onDemo }: LandingPageProps) {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onDemo}
-              className="btn-secondary text-lg px-8 py-4"
-            >
-              Try Demo
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleGoogleSignIn}
+              onClick={onSignIn}
               className="bg-white text-gray-800 border border-gray-200 rounded-lg px-6 py-4 flex items-center justify-center gap-2 shadow-sm hover:shadow transition"
             >
               <LogIn className="w-5 h-5 text-primary-600" />
-              Sign in with Google
+              Sign In
             </motion.button>
           </div>
         </motion.div>
@@ -122,47 +103,6 @@ export function LandingPage({ onGetStarted, onDemo }: LandingPageProps) {
           ))}
         </motion.div>
 
-        {/* Stats Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="bg-white rounded-2xl shadow-xl p-8 mb-20"
-        >
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Trusted by Students Worldwide
-            </h2>
-            <p className="text-gray-600">
-              Join thousands of students who are already learning smarter with AI
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-4 gap-8">
-            {[
-              { number: "10K+", label: "Active Students" },
-              { number: "95%", label: "Success Rate" },
-              { number: "24/7", label: "AI Support" },
-              { number: "50+", label: "Subjects Covered" }
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 1 + index * 0.1 }}
-                className="text-center"
-              >
-                <div className="text-3xl font-bold text-primary-600 mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-gray-600 font-medium">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
         {/* CTA Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -181,7 +121,7 @@ export function LandingPage({ onGetStarted, onDemo }: LandingPageProps) {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onGetStarted}
+              onClick={onSignUp}
               className="bg-white text-primary-600 font-semibold px-8 py-4 rounded-lg text-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center gap-2 mx-auto"
             >
               Start Learning Now

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 
 interface FlashcardProps {
   question: string;
@@ -17,26 +17,30 @@ export function Flashcard({ question, answer }: FlashcardProps) {
     >
       <motion.div
         className="relative h-full w-full"
-        style={{ transformStyle: 'preserve-3d' }}
+        style={{ transformStyle: "preserve-3d" }}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.5 }}
       >
         {/* Front of the card */}
         <div
-          className="absolute flex h-full w-full items-center justify-center rounded-lg bg-white p-4 shadow-lg"
-          style={{ backfaceVisibility: 'hidden' }}
+          className="absolute flex h-full w-full items-center justify-center rounded-lg bg-white p-6 shadow-lg"
+          style={{ backfaceVisibility: "hidden" }}
         >
-          <p className="text-xl font-bold">{question}</p>
+          <p className="text-lg font-bold text-center leading-relaxed break-words">
+            {question}
+          </p>
         </div>
         {/* Back of the card */}
         <div
-          className="absolute flex h-full w-full items-center justify-center rounded-lg bg-white p-4 shadow-lg"
+          className="absolute flex h-full w-full items-center justify-center rounded-lg bg-white p-6 shadow-lg"
           style={{
-            backfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)',
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
           }}
         >
-          <p className="text-xl">{answer}</p>
+          <p className="text-base text-center leading-relaxed break-words overflow-y-auto">
+            {answer}
+          </p>
         </div>
       </motion.div>
     </div>

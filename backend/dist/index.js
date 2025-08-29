@@ -146,6 +146,29 @@ exports.app.post('/api/v1/plan/generate', async (req, res) => {
         });
     }
 });
+// Flashcard generation
+exports.app.post('/api/v1/flashcards/generate', async (req, res) => {
+    try {
+        const { topic, count = 5 } = req.body;
+        if (!topic) {
+            return res.status(400).json({ error: 'Topic is required.' });
+        }
+        const flashcards = await aiService.generateFlashcards(topic, count);
+        res.json({
+            success: true,
+            flashcards,
+            topic,
+            count: flashcards.length
+        });
+    }
+    catch (error) {
+        console.error('Error in /api/v1/flashcards/generate:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to generate flashcards. Please try again.'
+        });
+    }
+});
 // User feedback
 exports.app.post('/api/v1/answer/feedback', async (req, res) => {
     try {

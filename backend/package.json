@@ -10,11 +10,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@huggingface/inference": "^4.7.1",
+    "@google/generative-ai": "^0.24.1",
+    "@types/ioredis": "^4.28.10",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "ioredis": "^5.7.0",
     "redis": "^4.6.0",
     "uuid": "^9.0.0"
   },

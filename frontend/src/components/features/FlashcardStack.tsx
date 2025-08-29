@@ -15,10 +15,15 @@ interface FlashcardStackProps {
   isLoading?: boolean;
 }
 
-export function FlashcardStack({ flashcards, onCardSentToBack, isLoading }: FlashcardStackProps) {
+export function FlashcardStack({
+  flashcards,
+  onCardSentToBack,
+  isLoading,
+}: FlashcardStackProps) {
   if (isLoading) {
+    // 🎯 LOADING STATE SIZE - Match this with the card size in CardStack.tsx
     return (
-      <div className="h-52 w-52 flex items-center justify-center">
+      <div className="h-96 w-80 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
           <p className="text-sm text-gray-600">Generating flashcards...</p>
@@ -28,8 +33,9 @@ export function FlashcardStack({ flashcards, onCardSentToBack, isLoading }: Flas
   }
 
   if (flashcards.length === 0) {
+    // 🎯 EMPTY STATE SIZE - Match this with the card size in CardStack.tsx
     return (
-      <div className="h-52 w-52 flex items-center justify-center">
+      <div className="h-96 w-80 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500">Select a topic to generate flashcards</p>
         </div>
@@ -39,9 +45,7 @@ export function FlashcardStack({ flashcards, onCardSentToBack, isLoading }: Flas
 
   return (
     <CardStack items={flashcards} onCardSentToBack={onCardSentToBack}>
-      {(card) => (
-        <Flashcard question={card.question} answer={card.answer} />
-      )}
+      {(card) => <Flashcard question={card.question} answer={card.answer} />}
     </CardStack>
   );
 }

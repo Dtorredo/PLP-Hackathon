@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react';
-import type { User, AppState } from '../../lib/types';
-import { FlashcardStack } from '../features/FlashcardStack';
-import { CourseSidebar } from '../features/CourseSidebar';
-import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { useEffect, useState } from "react";
+import type { User, AppState } from "../../lib/types";
+import { FlashcardStack } from "../features/FlashcardStack";
+import { CourseSidebar } from "../features/CourseSidebar";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  doc,
+  setDoc,
+} from "firebase/firestore";
+import { db } from "../../lib/firebase";
 
 interface FlashcardData {
   id: number;
@@ -17,9 +23,9 @@ interface FlashcardsPageProps {
   onStateChange: (state: AppState) => void;
 }
 
-export function FlashcardsPage({ user }: FlashcardsPageProps) {
-  const [sessionId, setSessionId] = useState<string>('');
-  const [selectedTopic, setSelectedTopic] = useState<string>('');
+export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
+  const [sessionId, setSessionId] = useState<string>("");
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,25 +36,28 @@ export function FlashcardsPage({ user }: FlashcardsPageProps) {
   const handleTopicSelect = async (topic: string) => {
     setSelectedTopic(topic);
     setIsLoading(true);
-    
+
     try {
-      const response = await fetch('http://localhost:3001/api/v1/flashcards/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ topic, count: 8 }),
-      });
+      const response = await fetch(
+        "http://localhost:3001/api/v1/flashcards/generate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ topic, count: 8 }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
         setFlashcards(data.flashcards);
       } else {
-        console.error('Failed to generate flashcards');
+        console.error("Failed to generate flashcards");
         setFlashcards([]);
       }
     } catch (error) {
-      console.error('Error generating flashcards:', error);
+      console.error("Error generating flashcards:", error);
       setFlashcards([]);
     } finally {
       setIsLoading(false);
@@ -57,43 +66,65 @@ export function FlashcardsPage({ user }: FlashcardsPageProps) {
 
   const handleProgress = async (cardId: number) => {
     if (!sessionId || !selectedTopic) return;
-    
-    const sessionRef = doc(db, 'users', user.id, 'flashcardSessions', sessionId);
-    await setDoc(sessionRef, { 
-      createdAt: serverTimestamp(), 
-      userId: user.id,
-      topic: selectedTopic 
-    }, { merge: true });
-    
-    await addDoc(collection(db, 'users', user.id, 'flashcardSessions', sessionId, 'events'), {
-      type: 'card-reviewed',
-      cardId,
-      topic: selectedTopic,
-      ts: serverTimestamp(),
-    });
+
+    const sessionRef = doc(
+      db,
+      "users",
+      user.id,
+      "flashcardSessions",
+      sessionId
+    );
+    await setDoc(
+      sessionRef,
+      {
+        createdAt: serverTimestamp(),
+        userId: user.id,
+        topic: selectedTopic,
+      },
+      { merge: true }
+    );
+
+    await addDoc(
+      collection(
+        db,
+        "users",
+        user.id,
+        "flashcardSessions",
+        sessionId,
+        "events"
+      ),
+      {
+        type: "card-reviewed",
+        cardId,
+        topic: selectedTopic,
+        ts: serverTimestamp(),
+      }
+    );
   };
 
   return (
     <div className="flex h-full">
-      <CourseSidebar 
+      <CourseSidebar
         onTopicSelect={handleTopicSelect}
         selectedTopic={selectedTopic}
       />
-      
+
       <div className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="card mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">AI-Powered Flashcards</h2>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              AI-Powered Flashcards
+            </h2>
             <p className="text-gray-600">
-              {selectedTopic 
-                ? `Studying: ${selectedTopic}` 
-                : 'Select a topic from the sidebar to generate personalized flashcards'
-              }
+              {selectedTopic
+                ? `Studying: ${selectedTopic}`
+                : "Select a topic from the sidebar to generate personalized flashcards"}
             </p>
           </div>
 
-          <div className="card flex justify-center">
-            <FlashcardStack 
+          {/* Centered flashcard stack with floating effect */}
+          <div className="flex justify-center items-center min-h-[500px]">
+            <FlashcardStack
               flashcards={flashcards}
               onCardSentToBack={handleProgress}
               isLoading={isLoading}
@@ -104,5 +135,3 @@ export function FlashcardsPage({ user }: FlashcardsPageProps) {
     </div>
   );
 }
-
-

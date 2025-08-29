@@ -27,8 +27,11 @@ const defaultConfig: StackConfig = {
 export function CardStack<T extends StackableItem>({
   items: initialItems,
   children,
-  containerClassName = "relative h-52 w-52",
-  cardClassName = "absolute h-52 w-52 cursor-grab",
+  // 🎯 CARD SIZE CONFIGURATION - Change these values to adjust card size:
+  // Current: h-96 w-80 (384px x 320px)
+  // Options: h-64 w-56 (256px x 224px), h-80 w-72 (320px x 288px), h-96 w-80 (384px x 320px), h-[500px] w-[400px] (custom)
+  containerClassName = "relative h-96 w-80",
+  cardClassName = "absolute h-96 w-80 cursor-grab",
   stackConfig: userConfig = {},
   onCardSentToBack,
 }: CardStackProps<T>) {
