@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { DraggableContainer } from "./DraggableContainer";
 import type { StackableItem } from "../../lib/types";

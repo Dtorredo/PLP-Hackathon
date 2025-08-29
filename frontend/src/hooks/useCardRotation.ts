@@ -1,5 +1,5 @@
-import { useMotionValue, useTransform } from "motion/react";
-import type { PanInfo } from "motion/react";
+import { useMotionValue, useTransform } from "framer-motion";
+import type { PanInfo } from "framer-motion";
 
 export function useCardRotation(onThresholdExceed?: () => void) {
   const x = useMotionValue(0);
