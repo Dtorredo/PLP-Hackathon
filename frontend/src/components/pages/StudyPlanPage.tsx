@@ -12,8 +12,10 @@ import {
   Plus,
   X,
   Trash2,
+  Copy,
 } from "lucide-react";
 import type { User, AppState } from "../../lib/types";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 
 interface StudyPlanTask {
   id: string;
@@ -51,10 +53,15 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   const [dailyHours, setDailyHours] = useState(2);
   const [weakTopics, setWeakTopics] = useState<string[]>([]);
   const [newTopic, setNewTopic] = useState("");
-  const [preferredTimeSlots, setPreferredTimeSlots] = useState<string[]>([]);
+  const [preferredTimeSlots, setPreferredTimeSlots] = useState<string[]>([
+    "Morning (9-12 PM)",
+    "Evening (6-9 PM)",
+  ]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showPlanForm, setShowPlanForm] = useState(false);
+  const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
   // Load existing study plan on component mount
   useEffect(() => {
@@ -165,6 +172,21 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     }
   };
 
+  const copyToClipboard = async (text: string, taskId?: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (taskId) {
+        setCopiedTaskId(taskId);
+        setTimeout(() => setCopiedTaskId(null), 2000);
+      }
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+      console.log("Copied to clipboard:", text);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
   const toggleTaskCompletion = async (taskId: string) => {
     if (!currentPlan) return;
 
@@ -238,7 +260,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   };
 
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-  
+
   // Get unique time slots from the current plan or use defaults
   const timeSlots = currentPlan?.preferredTimeSlots || preferredTimeSlots;
 
@@ -246,8 +268,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your study plan...</p>
+          <LoadingSpinner size="md" text="Loading your study plan..." />
         </div>
       </div>
     );
@@ -258,19 +279,19 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
       <div className="max-w-4xl mx-auto">
         <div className="card mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-6 h-6 text-primary-600" />
-            <h2 className="text-2xl font-bold text-gray-900">
+            <Sparkles className="w-6 h-6 text-primary-500" />
+            <h2 className="text-2xl font-bold text-white">
               AI Study Plan Generator
             </h2>
           </div>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-300 mb-6">
             Create a personalized study plan based on your available time and
             weak areas
           </p>
 
           {/* Daily Hours Input */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               <Clock className="w-4 h-4 inline mr-1" />
               Daily Study Hours (minimum 2)
             </label>
@@ -282,16 +303,16 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
               onChange={(e) =>
                 setDailyHours(Math.max(2, parseInt(e.target.value) || 2))
               }
-              className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="input-field w-32"
             />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-400 mt-1">
               How many hours can you study each day?
             </p>
           </div>
 
           {/* Weak Topics Input */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               <Target className="w-4 h-4 inline mr-1" />
               Add Your Weak Study Areas (maximum 5)
             </label>
@@ -304,7 +325,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                 onChange={(e) => setNewTopic(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && addTopic()}
                 placeholder="Enter a topic (e.g., Calculus, Physics, etc.)"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="input-field flex-1"
                 disabled={weakTopics.length >= 5}
               />
               <button
@@ -324,19 +345,19 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
             {/* Selected Topics */}
             {weakTopics.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400">
                   Selected topics ({weakTopics.length}/5):
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {weakTopics.map((topic) => (
                     <div
                       key={topic}
-                      className="flex items-center gap-2 px-3 py-1 bg-primary-100 text-primary-700 rounded-full"
+                      className="flex items-center gap-2 px-3 py-1 bg-primary-900 text-primary-300 rounded-full"
                     >
                       <span className="text-sm">{topic}</span>
                       <button
                         onClick={() => removeTopic(topic)}
-                        className="text-primary-600 hover:text-primary-800"
+                        className="text-primary-500 hover:text-primary-400"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -346,14 +367,14 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
               </div>
             )}
 
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-gray-400 mt-2">
               Add the topics you want to improve on (maximum 5 topics)
             </p>
           </div>
 
           {/* Preferred Time Slots */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               <Clock className="w-4 h-4 inline mr-1" />
               Preferred Study Time Slots (select up to 5)
             </label>
@@ -370,8 +391,8 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                   key={timeSlot}
                   className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                     preferredTimeSlots.includes(timeSlot)
-                      ? "border-primary-500 bg-primary-50"
-                      : "border-gray-300 hover:border-gray-400"
+                      ? "border-primary-500 bg-primary-900"
+                      : "border-secondary-700 hover:border-secondary-600"
                   }`}
                 >
                   <input
@@ -398,19 +419,26 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                 </label>
               ))}
             </div>
-            <p className="text-sm text-gray-500 mt-2">
-              Choose when you're most comfortable studying (minimum 1, maximum 5)
+            <p className="text-sm text-gray-400 mt-2">
+              Choose when you're most comfortable studying (minimum 1, maximum
+              5)
             </p>
           </div>
 
           {/* Generate Button */}
           <button
             onClick={generateNewPlan}
-            disabled={isGenerating || weakTopics.length === 0 || preferredTimeSlots.length === 0}
+            disabled={
+              isGenerating ||
+              weakTopics.length === 0 ||
+              preferredTimeSlots.length === 0
+            }
             className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-              weakTopics.length > 0 && preferredTimeSlots.length > 0 && !isGenerating
+              weakTopics.length > 0 &&
+              preferredTimeSlots.length > 0 &&
+              !isGenerating
                 ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg hover:shadow-xl"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-black text-gray-400 cursor-not-allowed border border-secondary-700"
             }`}
           >
             {isGenerating ? (
@@ -434,17 +462,14 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-12">
-          <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <BookOpen className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">
             No Study Plan Available
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-300 mb-4">
             Generate a new AI-powered study plan to get started.
           </p>
-          <button
-            onClick={() => setShowPlanForm(true)}
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-          >
+          <button onClick={() => setShowPlanForm(true)} className="btn-primary">
             Create New Plan
           </button>
         </div>
@@ -458,11 +483,11 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
       <div className="card mb-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-primary-600" />
+            <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-primary-500" />
               Your AI Study Plan
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-300">
               {currentPlan.dailyHours} hours daily •{" "}
               {currentPlan.weakTopics.join(", ")}
             </p>
@@ -470,16 +495,16 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary-600 mb-1">
+              <div className="text-3xl font-bold text-primary-500 mb-1">
                 {getProgressPercentage()}%
               </div>
-              <div className="text-sm text-gray-600">Weekly Progress</div>
+              <div className="text-sm text-gray-300">Weekly Progress</div>
             </div>
 
             {/* Delete Plan Button */}
             <button
               onClick={deleteCurrentPlan}
-              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 text-red-500 hover:text-red-400 hover:bg-red-900 rounded-lg transition-colors"
               title="Delete Study Plan"
             >
               <Trash2 className="w-5 h-5" />
@@ -488,7 +513,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+        <div className="w-full bg-secondary-700 rounded-full h-3 mb-4">
           <div
             className="bg-primary-600 h-3 rounded-full transition-all duration-300"
             style={{ width: `${getProgressPercentage()}%` }}
@@ -504,7 +529,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-blue-500" />
+            <Clock className="w-4 h-4 text-secondary-650" />
             <span>{currentPlan.tasks.length} total tasks</span>
           </div>
           <div className="flex items-center gap-2">
@@ -515,16 +540,16 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
       </div>
 
       {/* Calendar Grid - Notion Style */}
-      <div className="card p-0 overflow-hidden">
-        <div className="grid grid-cols-6 border-b border-gray-200">
+      <div className="card p-0 overflow-visible">
+        <div className="grid grid-cols-6 border-b border-secondary-700">
           {/* Header row */}
-          <div className="p-4 bg-gray-50 border-r border-gray-200 font-medium text-gray-700">
+          <div className="p-4 bg-secondary-900 border-r border-secondary-700 font-medium text-gray-300">
             Time
           </div>
           {days.map((day, index) => (
             <div
               key={day}
-              className="p-4 bg-gray-50 border-r border-gray-200 font-medium text-gray-700 text-center"
+              className="p-4 bg-secondary-900 border-r border-secondary-700 font-medium text-gray-300 text-center"
             >
               {day}
             </div>
@@ -535,10 +560,10 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
         {timeSlots.map((timeSlot, timeIndex) => (
           <div
             key={timeSlot}
-            className="grid grid-cols-6 border-b border-gray-200"
+            className="grid grid-cols-6 border-b border-secondary-700"
           >
             {/* Time slot header */}
-            <div className="p-4 bg-gray-50 border-r border-gray-200 font-medium text-gray-600 flex items-center">
+            <div className="p-4 bg-secondary-900 border-r border-secondary-700 font-medium text-gray-400 flex items-center">
               {timeSlot}
             </div>
 
@@ -550,10 +575,10 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
               return (
                 <div
                   key={`${day}-${timeSlot}`}
-                  className="p-3 border-r border-gray-200 min-h-[120px] relative"
+                  className="p-3 border-r border-secondary-700 min-h-[120px] relative"
                   style={{
                     backgroundImage: `
-                      radial-gradient(circle at 1px 1px, #e5e7eb 1px, transparent 0)
+                      radial-gradient(circle at 1px 1px, #475569 1px, transparent 0)
                     `,
                     backgroundSize: "20px 20px",
                   }}
@@ -564,28 +589,50 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                       className={`mb-2 p-2 rounded-lg border transition-all duration-200 cursor-pointer group relative ${
                         task.isFlashcardTask
                           ? task.completed
-                            ? "bg-purple-50 border-purple-200"
-                            : "bg-purple-100 border-purple-300 hover:border-purple-400 shadow-sm"
+                            ? "bg-purple-900 border-purple-800"
+                            : "bg-purple-900 border-purple-800 hover:border-purple-700 shadow-sm"
                           : task.completed
-                          ? "bg-green-50 border-green-200"
-                          : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+                          ? "bg-green-900 border-green-800"
+                          : "bg-secondary-800 border-secondary-700 hover:border-secondary-600 shadow-sm"
                       }`}
                       onClick={() => toggleTaskCompletion(task.id)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       {/* Hover Tooltip */}
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs">
-                        <div className="font-medium mb-1">{task.activity}</div>
-                        <div className="text-gray-300 mb-1">
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 -translate-y-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] max-w-sm min-w-[200px] shadow-2xl border border-gray-600">
+                        <div className="font-medium mb-1 break-words">
+                          {task.activity}
+                        </div>
+                        <div className="text-gray-300 mb-1 break-words">
                           Topic: {task.topic}
                         </div>
                         <div className="text-gray-300 mb-1">
                           Duration: {task.duration} minutes
                         </div>
-                        <div className="text-gray-300">{task.description}</div>
+                        <div className="text-gray-300 break-words leading-relaxed">
+                          {task.description}
+                        </div>
                         {task.isFlashcardTask && (
-                          <div className="text-purple-300 mt-1">📚 Flashcard Review Task</div>
+                          <div className="text-purple-300 mt-2 flex items-center justify-between">
+                            <span className="text-xs">
+                              📚 Flashcard Review Task
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(task.description, task.id);
+                              }}
+                              className={`ml-2 p-1 transition-colors bg-gray-800 rounded flex-shrink-0 ${
+                                copiedTaskId === task.id
+                                  ? "text-green-400"
+                                  : "text-purple-400 hover:text-purple-300"
+                              }`}
+                              title="Copy prompt"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
                         )}
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                       </div>
@@ -601,28 +648,46 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                                     : "bg-purple-300"
                                   : task.completed
                                   ? "bg-green-500"
-                                  : "bg-gray-300"
+                                  : "bg-gray-500"
                               }`}
                             />
-                            <span className="text-xs font-medium text-gray-600">
+                            <span className="text-xs font-medium text-gray-400">
                               {task.duration}min
                             </span>
                             {task.isFlashcardTask && (
-                              <span className="text-xs font-medium text-purple-600">
+                              <span className="text-xs font-medium text-purple-400">
                                 📚
                               </span>
                             )}
                           </div>
-                          <h5 className="text-xs font-medium text-gray-900 mb-1 truncate">
+                          <h5 className="text-xs font-medium text-white mb-1 truncate">
                             {task.activity}
                           </h5>
-                          <p className="text-xs text-gray-600 truncate">
+                          <p className="text-xs text-gray-400 truncate">
                             {task.topic}
                           </p>
                         </div>
-                        {task.completed && (
-                          <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
-                        )}
+                        <div className="flex items-center gap-1">
+                          {task.isFlashcardTask && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(task.description, task.id);
+                              }}
+                              className={`p-1 transition-colors ${
+                                copiedTaskId === task.id
+                                  ? "text-green-400"
+                                  : "text-purple-400 hover:text-purple-300"
+                              }`}
+                              title="Copy flashcard prompt"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          )}
+                          {task.completed && (
+                            <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -639,6 +704,18 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
           Generate New Plan
         </button>
       </div>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50"
+        >
+          Copied to clipboard! 📋
+        </motion.div>
+      )}
     </div>
   );
 }

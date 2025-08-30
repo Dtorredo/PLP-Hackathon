@@ -578,7 +578,7 @@ Format: JSON with tasks array containing: day (1-5), timeSlot, duration (20-30),
 
     const prompt = `Generate ${count} educational flashcards about ${topic}.
 Format each as: "Question: [question] Answer: [answer]"
-If the answer contains a code sample, format it using Markdown (e.g., ```code```).
+If the answer contains a code sample, format it using Markdown (e.g., \`\`\`code\`\`\`).
 Make them progressively harder, covering fundamentals to advanced concepts.`;
 
     try {

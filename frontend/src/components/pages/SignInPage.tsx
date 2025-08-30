@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, LogIn } from 'lucide-react';
 import { signInWithEmail } from '../../lib/auth';
 import { auth, googleProvider } from '../../lib/firebase';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { signInWithPopup } from 'firebase/auth';
 
 interface SignInPageProps {
@@ -54,7 +55,7 @@ export function SignInPage({ onSignInSuccess, onSwitchToSignUp }: SignInPageProp
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
+    <div className="min-h-screen bg-black flex flex-col justify-center items-center p-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -62,21 +63,21 @@ export function SignInPage({ onSignInSuccess, onSwitchToSignUp }: SignInPageProp
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <LogIn className="mx-auto h-12 w-12 text-primary-600" />
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">Sign In</h1>
-          <p className="text-gray-600 mt-2">Welcome back! Please sign in to continue.</p>
+          <LogIn className="mx-auto h-12 w-12 text-primary-500" />
+          <h1 className="text-3xl font-bold text-white mt-4">Sign In</h1>
+          <p className="text-gray-300 mt-2">Welcome back! Please sign in to continue.</p>
         </div>
         
         <div className="card space-y-6">
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
+            <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
               <p>{error}</p>
             </div>
           )}
 
           <form onSubmit={handleEmailSignIn} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</label>
+              <label htmlFor="email" className="text-sm font-medium text-gray-300">Email Address</label>
               <input
                 id="email"
                 type="email"
@@ -89,7 +90,7 @@ export function SignInPage({ onSignInSuccess, onSwitchToSignUp }: SignInPageProp
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
+              <label htmlFor="password" className="text-sm font-medium text-gray-300">Password</label>
               <input
                 id="password"
                 type="password"
@@ -106,34 +107,50 @@ export function SignInPage({ onSignInSuccess, onSwitchToSignUp }: SignInPageProp
               className="btn-primary w-full flex justify-center items-center gap-2"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
-              {!isLoading && <ArrowRight className="w-5 h-5" />}
+              {isLoading ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  Signing In...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           </form>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-secondary-700" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">Or continue with</span>
+              <span className="bg-secondary-900 px-2 text-gray-400">Or continue with</span>
             </div>
           </div>
 
           <button 
             onClick={handleGoogleSignIn}
-            className="w-full bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
+            className="w-full bg-secondary-800 border border-secondary-700 text-white font-medium py-2 px-4 rounded-lg hover:bg-secondary-700 flex items-center justify-center gap-2"
             disabled={isLoading}
           >
             <svg className="w-5 h-5" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 64.5C308.6 92.6 280.2 80 248 80c-82.8 0-150.5 63.5-150.5 141.5S165.2 393 248 393c52.5 0 95.5-22.2 123.3-49.3l63.8 63.8C414.5 453.4 338.5 504 248 504z"></path></svg>
-            Sign in with Google
+            {isLoading ? (
+              <>
+                <LoadingSpinner size="sm" />
+                Signing In...
+              </>
+            ) : (
+              'Sign in with Google'
+            )}
           </button>
         </div>
 
         <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-400">
             Don't have an account?{' '}
-            <button onClick={onSwitchToSignUp} className="font-medium text-primary-600 hover:underline">
+            <button onClick={onSwitchToSignUp} className="font-medium text-primary-500 hover:underline">
               Sign Up
             </button>
           </p>

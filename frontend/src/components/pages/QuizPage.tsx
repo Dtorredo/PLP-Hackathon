@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { CheckCircle, ArrowRight } from 'lucide-react';
-import type { User, AppState } from '../../lib/types';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { CheckCircle, ArrowRight } from "lucide-react";
+import type { User, AppState } from "../../lib/types";
 
 interface QuizPageProps {
   user: User;
@@ -10,23 +10,24 @@ interface QuizPageProps {
 
 const sampleQuestions = [
   {
-    id: 'q1',
-    question: 'What is the derivative of x²?',
-    answer: '2x',
-    explanation: 'The derivative of x² is 2x using the power rule'
+    id: "q1",
+    question: "What is the derivative of x²?",
+    answer: "2x",
+    explanation: "The derivative of x² is 2x using the power rule",
   },
   {
-    id: 'q2',
-    question: 'What is the integral of 2x?',
-    answer: 'x² + C',
-    explanation: 'The integral of 2x is x² + C, where C is the constant of integration'
+    id: "q2",
+    question: "What is the integral of 2x?",
+    answer: "x² + C",
+    explanation:
+      "The integral of 2x is x² + C, where C is the constant of integration",
   },
   {
-    id: 'q3',
-    question: 'Solve for x: 2x + 5 = 13',
-    answer: '4',
-    explanation: 'Subtract 5 from both sides: 2x = 8, then divide by 2: x = 4'
-  }
+    id: "q3",
+    question: "Solve for x: 2x + 5 = 13",
+    answer: "4",
+    explanation: "Subtract 5 from both sides: 2x = 8, then divide by 2: x = 4",
+  },
 ];
 
 export function QuizPage({ user, onStateChange }: QuizPageProps) {
@@ -38,9 +39,9 @@ export function QuizPage({ user, onStateChange }: QuizPageProps) {
   const handleAnswerSubmit = (answer: string) => {
     const question = sampleQuestions[currentQuestionIndex];
     const isCorrect = answer.toLowerCase() === question.answer.toLowerCase();
-    
-    setUserAnswers(prev => ({ ...prev, [question.id]: answer }));
-    
+
+    setUserAnswers((prev) => ({ ...prev, [question.id]: answer }));
+
     if (isCorrect) {
       setScore(score + 1);
     }
@@ -56,16 +57,16 @@ export function QuizPage({ user, onStateChange }: QuizPageProps) {
     setIsComplete(true);
     const finalScore = Math.round((score / sampleQuestions.length) * 100);
     const pointsToAdd = finalScore;
-    
+
     const updatedUser = { ...user, points: user.points + pointsToAdd };
     onStateChange({
       user: updatedUser,
       currentSession: null,
       isLoading: false,
-      error: null
+      error: null,
     });
-    
-    localStorage.setItem('ai-study-buddy-user', JSON.stringify(updatedUser));
+
+    localStorage.setItem("ai-study-buddy-user", JSON.stringify(updatedUser));
   };
 
   const startQuiz = () => {
@@ -80,7 +81,7 @@ export function QuizPage({ user, onStateChange }: QuizPageProps) {
       <div className="max-w-2xl mx-auto text-center">
         <div className="card">
           <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Quiz Complete!</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Quiz Complete!</h2>
           <div className="text-4xl font-bold text-primary-600 mb-2">
             {Math.round((score / sampleQuestions.length) * 100)}%
           </div>
@@ -106,36 +107,53 @@ export function QuizPage({ user, onStateChange }: QuizPageProps) {
               Question {currentQuestionIndex + 1} of {sampleQuestions.length}
             </span>
             <span className="text-sm text-gray-500">
-              {Math.round(((currentQuestionIndex + 1) / sampleQuestions.length) * 100)}%
+              {Math.round(
+                ((currentQuestionIndex + 1) / sampleQuestions.length) * 100
+              )}
+              %
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <motion.div
               className="bg-primary-600 h-2 rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: `${((currentQuestionIndex + 1) / sampleQuestions.length) * 100}%` }}
+              animate={{
+                width: `${
+                  ((currentQuestionIndex + 1) / sampleQuestions.length) * 100
+                }%`,
+              }}
               transition={{ duration: 0.3 }}
             />
           </div>
         </div>
 
         <div className="mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+          <h3 className="text-lg font-medium text-white mb-4">
             {currentQuestion.question}
           </h3>
-          
+
           <div className="space-y-3">
             <input
               type="text"
               placeholder="Type your answer..."
-              value={userAnswers[currentQuestion.id] || ''}
-              onChange={(e) => setUserAnswers(prev => ({ ...prev, [currentQuestion.id]: e.target.value }))}
+              value={userAnswers[currentQuestion.id] || ""}
+              onChange={(e) =>
+                setUserAnswers((prev) => ({
+                  ...prev,
+                  [currentQuestion.id]: e.target.value,
+                }))
+              }
               className="input-field"
-              onKeyPress={(e) => e.key === 'Enter' && handleAnswerSubmit(userAnswers[currentQuestion.id] || '')}
+              onKeyPress={(e) =>
+                e.key === "Enter" &&
+                handleAnswerSubmit(userAnswers[currentQuestion.id] || "")
+              }
             />
-            
+
             <button
-              onClick={() => handleAnswerSubmit(userAnswers[currentQuestion.id] || '')}
+              onClick={() =>
+                handleAnswerSubmit(userAnswers[currentQuestion.id] || "")
+              }
               disabled={!userAnswers[currentQuestion.id]?.trim()}
               className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >

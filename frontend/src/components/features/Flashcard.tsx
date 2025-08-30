@@ -23,7 +23,7 @@ export function Flashcard({ question, answer }: FlashcardProps) {
       >
         {/* Front of the card */}
         <div
-          className="absolute flex h-full w-full items-center justify-center rounded-lg bg-white p-6 shadow-lg"
+          className="absolute flex h-full w-full items-center justify-center rounded-lg bg-secondary-900 p-6 shadow-lg"
           style={{ backfaceVisibility: "hidden" }}
         >
           <p className="text-lg font-bold text-center leading-relaxed break-words">
@@ -32,7 +32,7 @@ export function Flashcard({ question, answer }: FlashcardProps) {
         </div>
         {/* Back of the card */}
         <div
-          className="absolute flex h-full w-full items-center justify-center rounded-lg bg-white p-6 shadow-lg"
+          className="absolute flex h-full w-full items-center justify-center rounded-lg bg-secondary-900 p-6 shadow-lg"
           style={{
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",

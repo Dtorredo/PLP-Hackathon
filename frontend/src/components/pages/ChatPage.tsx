@@ -10,6 +10,7 @@ import {
   doc,
   setDoc,
 } from "firebase/firestore";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 
 interface ChatPageProps {
   user: User;
@@ -155,11 +156,11 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="card mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <MessageCircle className="w-6 h-6 text-primary-600" />
+        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+          <MessageCircle className="w-6 h-6 text-primary-500" />
           Ask & Learn
         </h2>
-        <p className="text-gray-600">
+        <p className="text-gray-300">
           Ask me anything about your subjects. I'll provide detailed
           explanations with sources and practice questions.
         </p>
@@ -182,18 +183,18 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
                   className={`max-w-3xl rounded-lg p-4 ${
                     message.role === "user"
                       ? "bg-primary-600 text-white"
-                      : "bg-gray-100 text-gray-900"
+                      : "bg-secondary-800 text-white"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
 
                   {message.role === "assistant" && (
-                    <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+                    <div className="mt-4 pt-4 border-t border-secondary-700 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-400">
                           Confidence:
                         </span>
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                        <div className="w-20 bg-secondary-700 rounded-full h-2">
                           <div
                             className="bg-green-500 h-2 rounded-full"
                             style={{
@@ -201,7 +202,7 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
                             }}
                           />
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-400">
                           {Math.round((message.confidence || 0) * 100)}%
                         </span>
                       </div>
@@ -209,13 +210,13 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleFeedback(message.id, true)}
-                          className="text-green-600 hover:text-green-700"
+                          className="text-green-500 hover:text-green-400"
                         >
                           <ThumbsUp className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleFeedback(message.id, false)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-500 hover:text-red-400"
                         >
                           <ThumbsDown className="w-4 h-4" />
                         </button>
@@ -229,18 +230,8 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
 
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-lg p-4">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                  <div
-                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.1s" }}
-                  />
-                  <div
-                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  />
-                </div>
+              <div className="bg-secondary-800 rounded-lg p-4">
+                <LoadingSpinner size="sm" />
               </div>
             </div>
           )}

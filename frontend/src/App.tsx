@@ -13,6 +13,7 @@ import { SignUpPage } from "./components/pages/SignUpPage";
 import { SignInPage } from "./components/pages/SignInPage";
 import { SubjectsPage } from "./components/pages/SubjectsPage";
 import type { AppState, User } from "./lib/types";
+import { LoadingSpinner } from "./components/ui/LoadingSpinner";
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
@@ -34,6 +35,14 @@ function App() {
     localStorage.setItem("ai-study-buddy-current-page", currentPage);
   }, [currentPage]);
 
+  // Update last active time when user is active
+  useEffect(() => {
+    if (appState.user) {
+      const interval = setInterval(updateLastActive, 5 * 60 * 1000); // Update every 5 minutes
+      return () => clearInterval(interval);
+    }
+  }, [appState.user]);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
@@ -42,7 +51,16 @@ function App() {
 
         let user: User;
         if (userSnap.exists()) {
-          user = userSnap.data() as User;
+          const userData = userSnap.data();
+          // Convert Firestore Timestamps to JavaScript Date objects
+          user = {
+            ...userData,
+            id: fbUser.uid,
+            createdAt: userData.createdAt?.toDate?.() || new Date(),
+            lastActive: userData.lastActive?.toDate?.() || new Date(),
+            achievements: userData.achievements || [],
+            flashcardHistory: userData.flashcardHistory || [],
+          } as User;
         } else {
           // Create new user document if it doesn't exist
           user = {
@@ -53,6 +71,8 @@ function App() {
             streak: 0,
             subjects: [],
             topics: {},
+            achievements: [],
+            flashcardHistory: [],
             createdAt: new Date(),
             lastActive: new Date(),
           };
@@ -66,7 +86,7 @@ function App() {
           error: null,
         });
         // The rendering logic will handle redirecting to SubjectsPage if needed
-        
+
         setAuthAction(null);
       } else {
         setAppState({
@@ -93,9 +113,27 @@ function App() {
     }
   };
 
+  // Update user's last active time
+  const updateLastActive = async () => {
+    if (appState.user) {
+      const userRef = doc(db, "users", appState.user.id);
+      await setDoc(userRef, { lastActive: new Date() }, { merge: true });
+
+      // Update local state
+      setAppState((prev) => ({
+        ...prev,
+        user: { ...prev.user!, lastActive: new Date() },
+      }));
+    }
+  };
+
   // Loading state
   if (appState.isLoading) {
-    return <div>Loading...</div>; // Or a proper spinner component
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
   }
 
   // Auth flow
@@ -133,32 +171,30 @@ function App() {
 
   // Main application
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-black">
+      <header className="sticky top-0 z-50 bg-black shadow-sm border-b border-secondary-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <Brain className="h-8 w-8 text-primary-600" />
-              <h1 className="text-xl font-bold text-gray-900">
-                AI Study Buddy
-              </h1>
+              <h1 className="text-xl font-bold text-white">AI Study Buddy</h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Trophy className="h-5 w-5 text-yellow-500" />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-300">
                   {appState.user.points} pts
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <TrendingUp className="h-5 w-5 text-green-500" />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-300">
                   {appState.user.streak} day streak
                 </span>
               </div>
               <button
                 onClick={handleLogout}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-gray-400 hover:text-white"
               >
                 Logout
               </button>
@@ -167,9 +203,9 @@ function App() {
         </div>
       </header>
 
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+      <nav className="sticky top-16 z-40 px-4 py-2">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex justify-center space-x-1 bg-secondary-800/75 backdrop-blur-md border border-secondary-700 rounded-xl px-4 py-2 shadow-lg">
             {[
               { id: "chat", label: "Ask & Learn" },
               { id: "study", label: "Study Plan" },
@@ -179,10 +215,10 @@ function App() {
               <button
                 key={item.id}
                 onClick={() => setCurrentPage(item.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                   currentPage === item.id
-                    ? "border-primary-500 text-primary-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "bg-primary-600 text-white shadow-sm"
+                    : "text-gray-300 hover:text-white hover:bg-secondary-700"
                 }`}
               >
                 {item.label}

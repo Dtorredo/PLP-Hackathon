@@ -1,6 +1,7 @@
 import { CardStack } from "../core/CardStack";
 import type { StackableItem } from "../../lib/types";
 import { Flashcard } from "./Flashcard";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 
 interface FlashcardData extends StackableItem {
   question: string;
@@ -24,10 +25,7 @@ export function FlashcardStack({
     // 🎯 LOADING STATE SIZE - Match this with the card size in CardStack.tsx
     return (
       <div className="h-96 w-80 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600">Generating flashcards...</p>
-        </div>
+        <LoadingSpinner size="md" text="Generating flashcards..." />
       </div>
     );
   }
@@ -37,7 +35,7 @@ export function FlashcardStack({
     return (
       <div className="h-96 w-80 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500">Select a topic to generate flashcards</p>
+          <p className="text-gray-400">Select a topic to generate flashcards</p>
         </div>
       </div>
     );

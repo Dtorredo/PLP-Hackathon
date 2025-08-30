@@ -12,6 +12,8 @@ export interface User {
   streak: number;
   subjects: string[];
   topics: TopicProgress;
+  achievements: Achievement[];
+  flashcardHistory: FlashcardHistory[];
   createdAt: Date;
   lastActive: Date;
 }
@@ -23,6 +25,31 @@ export interface TopicProgress {
     lastSeen: number;
     strength: number; // 0-1, where 1 is strongest
   };
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: Date;
+  type: 'points' | 'streak' | 'subjects' | 'flashcards' | 'study_plan';
+}
+
+export interface FlashcardHistory {
+  id: string;
+  prompt: string;
+  module: string;
+  specificArea?: string;
+  flashcards: Flashcard[];
+  createdAt: Date;
+  lastViewed?: Date;
+}
+
+export interface Flashcard {
+  id: string;
+  question: string;
+  answer: string;
 }
 
 export interface Question {

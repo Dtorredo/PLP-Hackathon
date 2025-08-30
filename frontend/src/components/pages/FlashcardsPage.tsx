@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import type { User, AppState } from "../../lib/types";
+import type {
+  User,
+  AppState,
+  FlashcardHistory,
+  Flashcard,
+} from "../../lib/types";
 import { FlashcardStack } from "../features/FlashcardStack";
 import { CourseSidebar } from "../features/CourseSidebar";
 import {
@@ -8,6 +13,9 @@ import {
   serverTimestamp,
   doc,
   setDoc,
+  getDocs,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
@@ -28,10 +36,40 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [flashcardHistory, setFlashcardHistory] = useState<FlashcardHistory[]>(
+    []
+  );
 
   useEffect(() => {
     setSessionId(`${user.id}-flash-${Date.now()}`);
+    loadFlashcardHistory();
   }, [user.id]);
+
+  const loadFlashcardHistory = async () => {
+    try {
+      const historyRef = collection(db, "users", user.id, "flashcardHistory");
+      const q = query(historyRef, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+
+      const history: FlashcardHistory[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        history.push({
+          id: doc.id,
+          prompt: data.prompt,
+          module: data.module,
+          specificArea: data.specificArea,
+          flashcards: data.flashcards,
+          createdAt: data.createdAt.toDate(),
+          lastViewed: data.lastViewed?.toDate(),
+        });
+      });
+
+      setFlashcardHistory(history);
+    } catch (error) {
+      console.error("Error loading flashcard history:", error);
+    }
+  };
 
   const handleTopicSelect = async (topic: string) => {
     setSelectedTopic(topic);
@@ -52,6 +90,9 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
       if (response.ok) {
         const data = await response.json();
         setFlashcards(data.flashcards);
+
+        // Save to history
+        await saveToHistory(topic, data.flashcards);
       } else {
         console.error("Failed to generate flashcards");
         setFlashcards([]);
@@ -62,6 +103,48 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const saveToHistory = async (
+    topic: string,
+    generatedFlashcards: FlashcardData[]
+  ) => {
+    try {
+      const [module, specificArea] = topic.includes(" - ")
+        ? topic.split(" - ", 2)
+        : [topic, ""];
+
+      const historyRef = collection(db, "users", user.id, "flashcardHistory");
+      await addDoc(historyRef, {
+        prompt: topic,
+        module,
+        specificArea: specificArea || null,
+        flashcards: generatedFlashcards.map((card) => ({
+          id: card.id.toString(),
+          question: card.question,
+          answer: card.answer,
+        })),
+        createdAt: serverTimestamp(),
+        lastViewed: serverTimestamp(),
+      });
+
+      // Reload history
+      await loadFlashcardHistory();
+    } catch (error) {
+      console.error("Error saving to history:", error);
+    }
+  };
+
+  const handleHistorySelect = (history: FlashcardHistory) => {
+    setSelectedTopic(history.prompt);
+    setFlashcards(
+      history.flashcards.map((card) => ({
+        id: parseInt(card.id),
+        question: card.question,
+        answer: card.answer,
+        topic: history.prompt,
+      }))
+    );
   };
 
   const handleProgress = async (cardId: number) => {
@@ -107,15 +190,17 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
       <CourseSidebar
         onTopicSelect={handleTopicSelect}
         selectedTopic={selectedTopic}
+        flashcardHistory={flashcardHistory}
+        onHistorySelect={handleHistorySelect}
       />
 
       <div className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-white mb-2">
               AI-Powered Flashcards
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-300">
               {selectedTopic
                 ? `Studying: ${selectedTopic}`
                 : "Select a topic from the sidebar to generate personalized flashcards"}

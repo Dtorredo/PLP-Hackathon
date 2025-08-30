@@ -8,7 +8,7 @@ interface LandingPageProps {
 
 export function LandingPage({ onSignUp, onSignIn }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">
+    <div className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         {/* Hero Section */}
         <motion.div
@@ -21,17 +21,17 @@ export function LandingPage({ onSignUp, onSignIn }: LandingPageProps) {
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="inline-flex items-center justify-center w-20 h-20 bg-primary-100 rounded-full mb-8"
+            className="inline-flex items-center justify-center w-20 h-20 bg-primary-900 rounded-full mb-8"
           >
-            <Brain className="w-10 h-10 text-primary-600" />
+            <Brain className="w-10 h-10 text-primary-400" />
           </motion.div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
             Meet Your
-            <span className="text-primary-600 block">AI Study Buddy</span>
+            <span className="text-primary-500 block">AI Study Buddy</span>
           </h1>
           
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed">
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed">
             Your personal AI-powered study assistant that helps you learn smarter, 
             track progress, and ace your exams with personalized study plans and instant answers.
           </p>
@@ -51,9 +51,9 @@ export function LandingPage({ onSignUp, onSignIn }: LandingPageProps) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onSignIn}
-              className="bg-white text-gray-800 border border-gray-200 rounded-lg px-6 py-4 flex items-center justify-center gap-2 shadow-sm hover:shadow transition"
+              className="bg-secondary-800 text-white border border-secondary-700 rounded-lg px-6 py-4 flex items-center justify-center gap-2 shadow-sm hover:shadow transition"
             >
-              <LogIn className="w-5 h-5 text-primary-600" />
+              <LogIn className="w-5 h-5 text-primary-500" />
               Sign In
             </motion.button>
           </div>
@@ -90,13 +90,13 @@ export function LandingPage({ onSignUp, onSignIn }: LandingPageProps) {
               transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
               className="card text-center hover:shadow-lg transition-shadow duration-300"
             >
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-6">
-                <feature.icon className="w-8 h-8 text-primary-600" />
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-900 rounded-full mb-6">
+                <feature.icon className="w-8 h-8 text-primary-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+              <h3 className="text-xl font-semibold text-white mb-3">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-300 leading-relaxed">
                 {feature.description}
               </p>
             </motion.div>
@@ -122,7 +122,7 @@ export function LandingPage({ onSignUp, onSignIn }: LandingPageProps) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onSignUp}
-              className="bg-white text-primary-600 font-semibold px-8 py-4 rounded-lg text-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center gap-2 mx-auto"
+              className="bg-primary-100 text-primary-800 font-semibold px-8 py-4 rounded-lg text-lg hover:bg-primary-200 transition-colors duration-200 flex items-center justify-center gap-2 mx-auto"
             >
               Start Learning Now
               <Sparkles className="w-5 h-5" />
