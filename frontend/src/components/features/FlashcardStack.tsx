@@ -24,7 +24,7 @@ export function FlashcardStack({
   if (isLoading) {
     // 🎯 LOADING STATE SIZE - Match this with the card size in CardStack.tsx
     return (
-      <div className="h-96 w-80 flex items-center justify-center">
+      <div className="h-[420px] w-[420px] flex items-center justify-center">
         <LoadingSpinner size="md" text="Generating flashcards..." />
       </div>
     );
@@ -33,7 +33,7 @@ export function FlashcardStack({
   if (flashcards.length === 0) {
     // 🎯 EMPTY STATE SIZE - Match this with the card size in CardStack.tsx
     return (
-      <div className="h-96 w-80 flex items-center justify-center">
+      <div className="h-[420px] w-[420px] flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-400">Select a topic to generate flashcards</p>
         </div>

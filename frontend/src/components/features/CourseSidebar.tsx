@@ -49,7 +49,7 @@ export function CourseSidebar({
   };
 
   return (
-    <div className="w-80 bg-secondary-800 border-r border-secondary-700 p-4 overflow-y-auto">
+    <div className="w-80 bg-secondary-800 border-r border-secondary-700 p-4 overflow-y-auto rounded-xl shadow-lg sidebar-scrollbar -ml-16">
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Brain className="w-5 h-5 text-primary-500" />
@@ -144,20 +144,20 @@ export function CourseSidebar({
             <p className="text-xs">No flashcards generated yet</p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
             {flashcardHistory.slice(0, 10).map((history) => (
               <motion.button
                 key={history.id}
                 onClick={() => onHistorySelect(history)}
-                className="w-full text-left p-3 bg-secondary-900 border border-secondary-700 rounded-lg hover:border-primary-600 transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="w-full text-left p-2 bg-secondary-900 border border-secondary-700 rounded-lg hover:border-primary-600 transition-all duration-200 hover:bg-secondary-800"
+                whileHover={{ scale: 1.01, x: 2 }}
+                whileTap={{ scale: 0.99 }}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-white truncate">
+                  <span className="text-xs font-medium text-white truncate">
                     {history.module}
                   </span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 bg-secondary-800 px-1 py-0.5 rounded">
                     {history.flashcards.length} cards
                   </span>
                 </div>
@@ -166,10 +166,10 @@ export function CourseSidebar({
                     {history.specificArea}
                   </p>
                 )}
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-gray-500 truncate leading-tight">
                   {history.prompt}
                 </p>
-                <div className="flex items-center gap-1 mt-2">
+                <div className="flex items-center gap-1 mt-1">
                   <Clock className="w-3 h-3 text-gray-500" />
                   <span className="text-xs text-gray-500">
                     {new Date(history.createdAt).toLocaleDateString()}

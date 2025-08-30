@@ -357,3 +357,5 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`AI Study Buddy backend running on http://localhost:${port}`);
   });
 }
+
+

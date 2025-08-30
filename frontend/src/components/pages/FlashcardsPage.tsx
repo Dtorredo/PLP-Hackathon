@@ -186,7 +186,7 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full pt-4">
       <CourseSidebar
         onTopicSelect={handleTopicSelect}
         selectedTopic={selectedTopic}
@@ -194,21 +194,20 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
         onHistorySelect={handleHistorySelect}
       />
 
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 pl-2">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">
-              AI-Powered Flashcards
-            </h2>
-            <p className="text-gray-300">
-              {selectedTopic
-                ? `Studying: ${selectedTopic}`
-                : "Select a topic from the sidebar to generate personalized flashcards"}
-            </p>
-          </div>
-
           {/* Centered flashcard stack with floating effect */}
-          <div className="flex justify-center items-center min-h-[500px]">
+          <div className="flex flex-col justify-center items-center min-h-[500px]">
+            <div className="mb-4 text-center">
+              <h2 className="text-lg font-semibold text-white mb-1">
+                AI-Powered Flashcards
+              </h2>
+              <p className="text-sm text-gray-300">
+                {selectedTopic
+                  ? `Studying: ${selectedTopic}`
+                  : "Select a topic from the sidebar to generate personalized flashcards"}
+              </p>
+            </div>
             <FlashcardStack
               flashcards={flashcards}
               onCardSentToBack={handleProgress}

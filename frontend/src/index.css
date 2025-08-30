@@ -106,4 +106,44 @@
   .prose li {
     @apply text-gray-300;
   }
+
+  /* Flashcard specific styling */
+  .flashcard-prose {
+    @apply text-gray-300 leading-relaxed;
+  }
+
+  .flashcard-prose code {
+    @apply bg-secondary-700 text-green-300 px-1 py-0.5 rounded text-sm font-mono;
+  }
+
+  .flashcard-prose pre {
+    @apply bg-secondary-700 text-green-300 p-3 rounded-lg border border-secondary-600 overflow-x-auto;
+  }
+
+  .flashcard-prose strong {
+    @apply font-bold text-white;
+  }
+
+  /* Custom shadow for cards */
+  .shadow-3xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Custom scrollbar for sidebar */
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }

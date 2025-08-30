@@ -596,9 +596,24 @@ Format: JSON with tasks array containing: day (1-5), timeSlot, duration (20-30),
     }
 
     const prompt = `Generate ${count} educational flashcards about ${topic}.
-Format each as: "Question: [question] Answer: [answer]"
-If the answer contains a code sample, format it using Markdown (e.g., \`\`\`code\`\`\`).
-Make them progressively harder, covering fundamentals to advanced concepts.`;
+Format each flashcard exactly like this:
+
+**Flashcard 1**
+Question: [Your question here]
+Answer: [Your answer here]
+
+**Flashcard 2**
+Question: [Your question here]
+Answer: [Your answer here]
+
+If the answer contains code, use proper markdown code blocks like this:
+\`\`\`javascript
+console.log("Hello World");
+\`\`\`
+
+Make them progressively harder, covering fundamentals to advanced concepts.
+
+Separate each flashcard with --- on its own line.`;
 
     try {
       const model = this.genAI.getGenerativeModel({ model: this.modelId });
@@ -623,38 +638,98 @@ Make them progressively harder, covering fundamentals to advanced concepts.`;
       "\n-------------------------"
     );
     const flashcards = [];
-    const lines = aiText.split("\n");
-    let currentQuestion = "";
-    let currentAnswer = "";
 
-    for (const line of lines) {
-      const qMatch = line.match(/question:(.*)/i);
-      const aMatch = line.match(/answer:(.*)/i);
+    // Split by flashcard sections (looking for --- separators)
+    const flashcardSections = aiText.split(/---/);
 
-      if (qMatch) {
-        if (currentQuestion && currentAnswer) {
-          flashcards.push({
-            id: flashcards.length + 1,
-            question: currentQuestion.trim(),
-            answer: currentAnswer.trim(),
-            topic: topic,
-          });
-          if (flashcards.length >= count) break;
+    for (
+      let i = 1;
+      i < flashcardSections.length && flashcards.length < count;
+      i++
+    ) {
+      const section = flashcardSections[i];
+      const lines = section.split("\n");
+
+      let question = "";
+      let answer = "";
+      let inAnswer = false;
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+
+        // Look for Question: pattern
+        if (trimmedLine.toLowerCase().startsWith("question:")) {
+          question = trimmedLine.substring("question:".length).trim();
+          inAnswer = false;
         }
-        currentQuestion = qMatch[1].trim();
-        currentAnswer = "";
-      } else if (aMatch) {
-        currentAnswer = aMatch[1].trim();
+        // Look for Answer: pattern
+        else if (trimmedLine.toLowerCase().startsWith("answer:")) {
+          answer = trimmedLine.substring("answer:".length).trim();
+          inAnswer = true;
+        }
+        // If we're in answer mode and line is not empty, append to answer
+        else if (inAnswer && trimmedLine.length > 0) {
+          answer += "\n" + trimmedLine;
+        }
+        // If we have a question but no answer yet, and line starts with code block
+        else if (question && !answer && trimmedLine.startsWith("```")) {
+          answer = trimmedLine;
+          inAnswer = true;
+        }
+        // If we're in answer mode and line is a code block continuation
+        else if (
+          inAnswer &&
+          (trimmedLine.startsWith("```") || trimmedLine.length > 0)
+        ) {
+          answer += "\n" + trimmedLine;
+        }
+      }
+
+      if (question && answer) {
+        flashcards.push({
+          id: flashcards.length + 1,
+          question: question.trim(),
+          answer: answer.trim(),
+          topic: topic,
+        });
       }
     }
 
-    if (currentQuestion && currentAnswer && flashcards.length < count) {
-      flashcards.push({
-        id: flashcards.length + 1,
-        question: currentQuestion.trim(),
-        answer: currentAnswer.trim(),
-        topic: topic,
-      });
+    // If the above parsing didn't work, try the original simple parsing
+    if (flashcards.length === 0) {
+      const lines = aiText.split("\n");
+      let currentQuestion = "";
+      let currentAnswer = "";
+
+      for (const line of lines) {
+        const qMatch = line.match(/question:(.*)/i);
+        const aMatch = line.match(/answer:(.*)/i);
+
+        if (qMatch) {
+          if (currentQuestion && currentAnswer) {
+            flashcards.push({
+              id: flashcards.length + 1,
+              question: currentQuestion.trim(),
+              answer: currentAnswer.trim(),
+              topic: topic,
+            });
+            if (flashcards.length >= count) break;
+          }
+          currentQuestion = qMatch[1].trim();
+          currentAnswer = "";
+        } else if (aMatch) {
+          currentAnswer = aMatch[1].trim();
+        }
+      }
+
+      if (currentQuestion && currentAnswer && flashcards.length < count) {
+        flashcards.push({
+          id: flashcards.length + 1,
+          question: currentQuestion.trim(),
+          answer: currentAnswer.trim(),
+          topic: topic,
+        });
+      }
     }
 
     if (flashcards.length === 0) {
