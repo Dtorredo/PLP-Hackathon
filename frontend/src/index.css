@@ -70,4 +70,40 @@
   [class*="bg-secondary-"] {
     @apply bg-secondary-800 !important;
   }
+
+  /* Markdown styling for chat messages */
+  .prose {
+    @apply text-gray-300;
+  }
+
+  .prose h1,
+  .prose h2,
+  .prose h3 {
+    @apply text-white font-bold;
+  }
+
+  .prose strong {
+    @apply text-white font-semibold;
+  }
+
+  .prose code {
+    @apply bg-secondary-700 text-primary-300 px-1 py-0.5 rounded text-sm;
+  }
+
+  .prose pre {
+    @apply bg-secondary-900 p-3 rounded-lg overflow-x-auto;
+  }
+
+  .prose pre code {
+    @apply bg-transparent p-0 text-white;
+  }
+
+  .prose ul,
+  .prose ol {
+    @apply space-y-1;
+  }
+
+  .prose li {
+    @apply text-gray-300;
+  }
 }

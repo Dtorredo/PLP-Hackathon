@@ -171,38 +171,57 @@ export class AIService {
     return `You are an AI study buddy. Mode: ${mode}.
 Question: ${question}
 
-Please respond with:
-- A concise answer.
-- A short explanation section labeled "Explanation:".
-- 3 short practice steps labeled "Practice:" as a bulleted list.`;
+Please respond in a clear, structured format:
+
+**Concise Answer:**
+[Provide a brief, direct answer to the question]
+
+**Explanation:**
+[Give a detailed explanation of the concept, breaking it down into understandable parts]
+
+**Practice:**
+- [First practice activity or exercise]
+- [Second practice activity or exercise] 
+- [Third practice activity or exercise]
+
+Make sure to use proper markdown formatting with **bold** headers and bullet points for the practice section.`;
   }
 
   private extractSection(text: string, sectionLabel: string): string | null {
-    const regex = new RegExp(`${sectionLabel}[:\n]+([\\s\\S]*)`, "i");
+    // Handle both "Explanation:" and "**Explanation:**" formats
+    const regex = new RegExp(
+      `\\*\\*${sectionLabel}\\*\\*[:\n]+([\\s\\S]*?)(?=\\*\\*|$)`,
+      "i"
+    );
     const match = text.match(regex);
     return match ? match[1].trim() : null;
   }
 
   private extractPractice(text: string): string[] {
-    const practiceLabelIndex = text.toLowerCase().indexOf("practice");
-    if (practiceLabelIndex === -1)
-      return [
-        "Review the basic concepts",
-        "Practice with similar problems",
-        "Take a quiz to test your understanding",
-      ];
-    const lines = text.slice(practiceLabelIndex).split("\n");
-    const items = lines
-      .map((l) => l.replace(/^[-*\d\.\)\s]+/, "").trim())
-      .filter((l) => l.length > 0)
-      .slice(0, 3);
-    return items.length > 0
-      ? items
-      : [
-          "Review the basic concepts",
-          "Practice with similar problems",
-          "Take a quiz to test your understanding",
-        ];
+    // Look for the Practice section with markdown formatting
+    const practiceRegex = /\*\*Practice:\*\*[\s\S]*?(- [^\n]+(?:\n|$))+/i;
+    const match = text.match(practiceRegex);
+
+    if (match) {
+      const practiceSection = match[0];
+      const items = practiceSection
+        .split("\n")
+        .map((line) => line.replace(/^[-*\d\.\)\s]+/, "").trim())
+        .filter((line) => line.length > 0 && !line.includes("**Practice:**"))
+        .slice(0, 3);
+
+      return items.length > 0 ? items : this.getDefaultPractice();
+    }
+
+    return this.getDefaultPractice();
+  }
+
+  private getDefaultPractice(): string[] {
+    return [
+      "Review the basic concepts",
+      "Practice with similar problems",
+      "Take a quiz to test your understanding",
+    ];
   }
 
   async generateQuiz(topics: string[], count: number): Promise<any[]> {

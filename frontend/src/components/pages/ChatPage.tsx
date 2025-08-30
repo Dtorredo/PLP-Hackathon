@@ -11,6 +11,8 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ChatPageProps {
   user: User;
@@ -186,7 +188,85 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
                       : "bg-secondary-800 text-white"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <div className="prose prose-invert max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        // Customize code blocks
+                        code: ({
+                          node,
+                          inline,
+                          className,
+                          children,
+                          ...props
+                        }) => {
+                          const match = /language-(\w+)/.exec(className || "");
+                          return !inline ? (
+                            <pre className="bg-secondary-900 p-3 rounded-lg overflow-x-auto">
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
+                            </pre>
+                          ) : (
+                            <code
+                              className="bg-secondary-700 px-1 py-0.5 rounded text-sm"
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          );
+                        },
+                        // Customize headings
+                        h1: ({ children }) => (
+                          <h1 className="text-2xl font-bold text-white mb-4">
+                            {children}
+                          </h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-xl font-bold text-white mb-3">
+                            {children}
+                          </h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-lg font-bold text-white mb-2">
+                            {children}
+                          </h3>
+                        ),
+                        // Customize lists
+                        ul: ({ children }) => (
+                          <ul className="list-disc list-inside mb-4 space-y-1">
+                            {children}
+                          </ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="list-decimal list-inside mb-4 space-y-1">
+                            {children}
+                          </ol>
+                        ),
+                        li: ({ children }) => (
+                          <li className="text-gray-300">{children}</li>
+                        ),
+                        // Customize paragraphs
+                        p: ({ children }) => (
+                          <p className="mb-3 text-gray-300 leading-relaxed">
+                            {children}
+                          </p>
+                        ),
+                        // Customize strong text
+                        strong: ({ children }) => (
+                          <strong className="font-semibold text-white">
+                            {children}
+                          </strong>
+                        ),
+                        // Customize emphasis
+                        em: ({ children }) => (
+                          <em className="italic text-gray-300">{children}</em>
+                        ),
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
 
                   {message.role === "assistant" && (
                     <div className="mt-4 pt-4 border-t border-secondary-700 flex items-center justify-between">
