@@ -1,219 +1,337 @@
-# AI Study Buddy 🧠📚
+# AI Study Buddy 🧠
 
-A comprehensive AI-powered study assistant that helps students learn smarter, track progress, and ace their exams with personalized study plans and instant answers.
+A comprehensive AI-powered study platform that helps students create personalized learning experiences through intelligent flashcards, study plans, and interactive learning tools.
 
-## ✨ Features
+## 🚀 Features
 
-### 🎯 Core Learning Features
-- **AI-Powered Q&A**: Get instant, accurate answers with source citations and explanations
-- **Personalized Quizzes**: Adaptive quizzes that focus on your weak areas
-- **Study Planning**: AI-generated study plans that adapt to your schedule and learning pace
-- **Progress Tracking**: Monitor your strengths and weaknesses across different topics
+### 🤖 AI-Powered Learning
 
-### 🏆 Gamification
-- **Points System**: Earn points for correct answers and completed tasks
-- **Streaks**: Build daily study streaks to maintain motivation
-- **Badges**: Unlock achievements as you progress
-- **Progress Visualization**: Beautiful charts and progress bars
+- **Smart Flashcard Generation**: Create personalized flashcards for any subject using Google Gemini AI
+- **Intelligent Study Plans**: AI-generated weekly study schedules with topic distribution
+- **Interactive Chat**: Ask questions and get detailed explanations with practice exercises
+- **Adaptive Content**: Content adapts to your learning style and progress
 
-### 🎨 User Experience
-- **Modern UI**: Clean, responsive design built with React and Tailwind CSS
-- **Smooth Animations**: Engaging interactions powered by Framer Motion
-- **Mobile-First**: Optimized for all devices
-- **Real-time Updates**: Instant feedback and progress updates
+### 📚 Study Tools
 
-## 🚀 Tech Stack
+- **Flashcard System**: Interactive, draggable flashcards with markdown support
+- **Study Plan Calendar**: Notion-style calendar grid with daily task tracking
+- **Progress Tracking**: Monitor your learning progress and achievements
+- **Flashcard History**: Save and revisit previously generated flashcards
+
+### 🎯 Personalization
+
+- **Subject Selection**: Choose your study subjects and focus areas
+- **Time Management**: Set preferred study time slots for optimal scheduling
+- **Achievement System**: Earn badges for consistent study habits
+- **User Profiles**: Track points, streaks, and learning history
+
+### 🎨 Modern UI/UX
+
+- **Dark Theme**: Beautiful dark interface with pink accents
+- **Responsive Design**: Works seamlessly on desktop and mobile
+- **Smooth Animations**: Framer Motion powered interactions
+- **Glassmorphism Effects**: Modern blur effects and gradients
+
+## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 18** with TypeScript
 - **Tailwind CSS** for styling
 - **Framer Motion** for animations
-- **Lucide React** for icons
-- **Vite** for build tooling
+- **Firebase** for authentication and data storage
+- **React Markdown** for content rendering
 
 ### Backend
-- **Node.js** with Express
+
+- **Node.js** with Express.js
 - **TypeScript** for type safety
-- **Free AI Models** (Hugging Face compatible)
-- **Mock Redis** for data storage (easily replaceable with real Redis)
+- **Google Gemini AI** for intelligent content generation
+- **Redis** for session management and caching
+- **ioredis** for Redis client
 
-### AI & ML
-- **Free AI Models**: Uses Hugging Face inference API (when token provided)
-- **Fallback System**: Intelligent fallback responses for reliable operation
-- **Context-Aware**: Understands study context and provides relevant answers
+### Package Management
 
-## 🛠️ Installation & Setup
+- **pnpm** for fast, efficient dependency management
+- **pnpm workspaces** for monorepo structure
+
+## 📦 Project Structure
+
+```
+ai-study-buddy/
+├── frontend/                 # React frontend application
+│   ├── src/
+│   │   ├── components/       # React components
+│   │   ├── lib/             # Utilities and types
+│   │   └── pages/           # Page components
+│   ├── package.json
+│   └── tailwind.config.js
+├── backend/                  # Node.js backend API
+│   ├── src/
+│   │   ├── ai.service.ts    # AI integration
+│   │   ├── redis.service.ts # Redis operations
+│   │   └── index.ts         # Express server
+│   └── package.json
+├── package.json              # Root package.json
+├── pnpm-workspace.yaml       # pnpm workspace config
+└── dev.sh                    # Development script
+```
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn
 
-### Quick Start
+- **Node.js** (v18 or higher)
+- **pnpm** (v8 or higher)
+- **Redis** server running locally
+
+### Installation
 
 1. **Clone the repository**
+
    ```bash
-   git clone <your-repo-url>
-   cd PLP-Hackathon
+   git clone <repository-url>
+   cd ai-study-buddy
    ```
 
 2. **Install dependencies**
+
    ```bash
-   npm install
+   pnpm install
    ```
 
-3. **Start development servers**
-   ```bash
-   # Start both frontend and backend
-   npm run dev
-   
-   # Or start individually
-   npm run dev:frontend  # Frontend on http://localhost:3000
-   npm run dev:backend   # Backend on http://localhost:3001
+3. **Set up environment variables**
+
+   Create `.env` files in both `frontend/` and `backend/` directories:
+
+   **Backend (.env)**
+
+   ```env
+   PORT=3001
+   GOOGLE_AI_API_KEY=your_gemini_api_key
+   REDIS_URL=redis://localhost:6379
    ```
 
-4. **Open your browser**
-   Navigate to `http://localhost:3000` to see the AI Study Buddy in action!
+   **Frontend (.env)**
 
-## 🔧 Configuration
+   ```env
+   VITE_API_URL=http://localhost:3001
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+   VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+   ```
 
-### Environment Variables
+4. **Start Redis server**
 
-Create a `.env` file in the backend directory:
+   ```bash
+   redis-server
+   ```
 
-```env
-# Optional: Hugging Face API token for enhanced AI responses
-HF_TOKEN=your_huggingface_token_here
+5. **Start development servers**
 
-# Server configuration
-PORT=3001
-NODE_ENV=development
+   ```bash
+   # Option 1: Use the convenience script
+   ./dev.sh
+
+   # Option 2: Use pnpm workspace commands
+   pnpm dev
+   ```
+
+The application will be available at:
+
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:3001
+
+## 📋 Available Scripts
+
+### Root Level (pnpm workspace)
+
+```bash
+pnpm dev              # Start both frontend and backend
+pnpm dev:frontend     # Start only frontend
+pnpm dev:backend      # Start only backend
+pnpm build            # Build both projects
+pnpm install:all      # Install all dependencies
 ```
 
-### AI Model Configuration
+### Frontend
 
-The system works out of the box with intelligent fallback responses. To enhance AI capabilities:
+```bash
+pnpm dev              # Start development server
+pnpm build            # Build for production
+pnpm preview          # Preview production build
+```
 
-1. Get a free Hugging Face token from [huggingface.co](https://huggingface.co)
-2. Add it to your `.env` file
-3. The system will automatically use free AI models for enhanced responses
+### Backend
 
-## 📱 Usage
+```bash
+pnpm dev              # Start development server
+pnpm build            # Build TypeScript
+pnpm start            # Start production server
+```
 
-### Getting Started
-1. **Landing Page**: Learn about the features and get started
-2. **Onboarding**: Quick setup with your name, email, and subjects
-3. **Main Dashboard**: Access all learning features
+## 🔧 Development
 
-### Learning Features
-- **Ask & Learn**: Chat with AI about any subject
-- **Study Plan**: Get personalized study schedules
-- **Quiz Mode**: Test your knowledge with adaptive quizzes
-- **Profile**: Track your progress and achievements
+### Key Features Implementation
 
-### Tips for Best Results
-- Ask specific questions for better AI responses
-- Complete daily study tasks to maintain streaks
-- Take quizzes regularly to identify weak areas
-- Use the feedback system to improve AI responses
+#### AI Integration
+
+- **Google Gemini 2.5 Flash**: Fast, efficient AI model for content generation
+- **Smart Prompts**: Structured prompts for consistent, high-quality output
+- **Fallback Systems**: Robust error handling and fallback responses
+
+#### Flashcard System
+
+- **Dynamic Generation**: Create flashcards for any subject or topic
+- **Markdown Support**: Rich text formatting with code highlighting
+- **Interactive Cards**: Draggable cards with smooth animations
+- **History Management**: Save and load previous flashcard sets
+
+#### Study Plan Generation
+
+- **Weekly Scheduling**: 5-day plans with topic distribution
+- **Time Slot Management**: User-defined study time preferences
+- **Progress Tracking**: Visual progress indicators and completion tracking
+- **Flashcard Integration**: Daily flashcard prompts based on study topics
+
+#### User Experience
+
+- **Sticky Navigation**: Header and navbar stay in position while scrolling
+- **Loading States**: Custom SVG animations for better UX
+- **Responsive Design**: Optimized for all screen sizes
+- **Dark Theme**: Consistent dark interface throughout
+
+### Database Schema
+
+#### Firebase Firestore
+
+```typescript
+// User Document
+{
+  id: string
+  name: string
+  email: string
+  points: number
+  streak: number
+  subjects: string[]
+  achievements: Achievement[]
+  flashcardHistory: FlashcardHistory[]
+  createdAt: Date
+  lastActive: Date
+}
+
+// Achievement
+{
+  id: string
+  name: string
+  description: string
+  icon: string
+  earnedAt: Date
+  type: 'points' | 'streak'
+}
+
+// Flashcard History
+{
+  id: string
+  prompt: string
+  module: string
+  specificArea: string
+  flashcards: Flashcard[]
+  createdAt: Date
+  lastViewed: Date
+}
+```
+
+#### Redis
+
+- **Session Management**: User session data and message history
+- **Study Plan Storage**: Weekly study plans with progress tracking
+- **Caching**: Frequently accessed data for improved performance
+
+## 🎨 UI Components
+
+### Custom Components
+
+- **LoadingSpinner**: Custom SVG animation for loading states
+- **CardStack**: Draggable card stack with 3D effects
+- **Flashcard**: Interactive flashcard with markdown rendering
+- **CourseSidebar**: Flashcard generation and history management
+- **StudyPlanCalendar**: Notion-style calendar grid
+
+### Styling
+
+- **Tailwind CSS**: Utility-first CSS framework
+- **Custom Colors**: Dark theme with pink accents
+- **Glassmorphism**: Modern blur effects and transparency
+- **Responsive Design**: Mobile-first approach
 
 ## 🚀 Deployment
 
-### Vercel (Frontend)
-The project is configured for easy deployment on Vercel:
+### DigitalOcean App Platform
 
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Deploy automatically on every push
+1. Connect your GitHub repository
+2. Configure environment variables
+3. Set build commands:
+   - **Frontend**: `cd frontend && pnpm build`
+   - **Backend**: `cd backend && pnpm build && pnpm start`
 
-### Backend Deployment
-Deploy the backend to any Node.js hosting service:
+### Railway (Alternative)
 
-- **Railway**: Easy deployment with Redis support
-- **Render**: Free tier available
-- **Fly.io**: Global deployment
-- **Heroku**: Classic platform
+1. Connect your GitHub repository
+2. Set environment variables
+3. Deploy automatically on push
 
-### Environment Setup for Production
-```env
-NODE_ENV=production
-PORT=3001
-# Add your production Redis URL if using real Redis
-REDIS_URL=your_redis_url_here
-```
+## 🔍 Troubleshooting
 
-## 🔍 API Endpoints
+### Common Issues
 
-### Core Endpoints
-- `POST /api/v1/ask` - Ask questions and get AI responses
-- `POST /api/v1/quiz/start` - Start a new quiz
-- `POST /api/v1/quiz/answer` - Submit quiz answers
-- `POST /api/v1/plan/generate` - Generate personalized study plans
-- `POST /api/v1/answer/feedback` - Provide feedback on AI responses
-
-### Health Check
-- `GET /api/v1/status` - Service health status
-
-## 🧪 Testing
+#### Port Conflicts
 
 ```bash
-# Frontend tests
-cd frontend
-npm test
+# Kill existing processes
+pkill -f "vite\|ts-node-dev" || true
+# Restart services
+pnpm dev
+```
 
-# Backend tests
-cd backend
-npm test
+#### Redis Connection Issues
+
+```bash
+# Check if Redis is running
+redis-cli ping
+# Start Redis if not running
+redis-server
+```
+
+#### pnpm Issues
+
+```bash
+# Clear pnpm cache
+pnpm store prune
+# Reinstall dependencies
+pnpm install
 ```
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- Built for hackathon projects and educational purposes
-- Uses free AI models to keep costs low
-- Inspired by the need for accessible, AI-powered education tools
-
-## 🆘 Support
-
-If you encounter any issues:
-
-1. Check the [Issues](https://github.com/yourusername/PLP-Hackathon/issues) page
-2. Create a new issue with detailed information
-3. Include your environment details and error messages
-
-## 🎯 Roadmap
-
-### Phase 1 (Current)
-- ✅ Basic AI Q&A system
-- ✅ Quiz functionality
-- ✅ Study planning
-- ✅ Progress tracking
-
-### Phase 2 (Future)
-- 🔄 Real Redis integration
-- 🔄 Advanced AI model integration
-- 🔄 Voice input support
-- 🔄 Document upload and processing
-- 🔄 Collaborative study groups
-
-### Phase 3 (Advanced)
-- 🔄 Adaptive learning algorithms
-- 🔄 Multi-language support
-- 🔄 Advanced analytics
-- 🔄 Mobile app development
+- **Google Gemini AI** for intelligent content generation
+- **Firebase** for backend services
+- **Tailwind CSS** for styling
+- **Framer Motion** for animations
+- **pnpm** for fast package management
 
 ---
 
-**Built with ❤️ for the hackathon community**
-
-*Transform your learning experience with AI-powered education!*
+**Built with ❤️ for better learning experiences**
