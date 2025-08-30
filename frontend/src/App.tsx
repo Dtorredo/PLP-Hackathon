@@ -66,7 +66,7 @@ function App() {
           error: null,
         });
         // The rendering logic will handle redirecting to SubjectsPage if needed
-        setCurrentPage("chat");
+        
         setAuthAction(null);
       } else {
         setAppState({

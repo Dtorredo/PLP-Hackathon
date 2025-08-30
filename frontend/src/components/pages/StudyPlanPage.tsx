@@ -25,6 +25,7 @@ interface StudyPlanTask {
   description: string;
   completed: boolean;
   estimatedTime: number;
+  isFlashcardTask?: boolean;
 }
 
 interface StudyPlan {
@@ -32,6 +33,7 @@ interface StudyPlan {
   userId: string;
   dailyHours: number;
   weakTopics: string[];
+  preferredTimeSlots: string[];
   tasks: StudyPlanTask[];
   createdAt: Date;
   completedTasks: string[];
@@ -49,6 +51,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   const [dailyHours, setDailyHours] = useState(2);
   const [weakTopics, setWeakTopics] = useState<string[]>([]);
   const [newTopic, setNewTopic] = useState("");
+  const [preferredTimeSlots, setPreferredTimeSlots] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showPlanForm, setShowPlanForm] = useState(false);
@@ -118,6 +121,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
             userId: user.id,
             dailyHours,
             weakTopics,
+            preferredTimeSlots,
           }),
         }
       );
@@ -136,7 +140,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [user.id, dailyHours, weakTopics]);
+  }, [user.id, dailyHours, weakTopics, preferredTimeSlots]);
 
   const deleteCurrentPlan = async () => {
     if (!currentPlan) return;
@@ -233,8 +237,10 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     return getDayTasks(day).filter((task) => task.timeSlot === timeSlot);
   };
 
-  const timeSlots = ["Morning", "Afternoon", "Evening"];
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  
+  // Get unique time slots from the current plan or use defaults
+  const timeSlots = currentPlan?.preferredTimeSlots || preferredTimeSlots;
 
   if (isLoading) {
     return (
@@ -345,12 +351,64 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
             </p>
           </div>
 
+          {/* Preferred Time Slots */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Clock className="w-4 h-4 inline mr-1" />
+              Preferred Study Time Slots (select up to 5)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                "Early Morning (6-9 AM)",
+                "Morning (9-12 PM)",
+                "Afternoon (12-3 PM)",
+                "Late Afternoon (3-6 PM)",
+                "Evening (6-9 PM)",
+                "Night (9-12 AM)",
+              ].map((timeSlot) => (
+                <label
+                  key={timeSlot}
+                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                    preferredTimeSlots.includes(timeSlot)
+                      ? "border-primary-500 bg-primary-50"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={preferredTimeSlots.includes(timeSlot)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        if (preferredTimeSlots.length < 5) {
+                          setPreferredTimeSlots((prev) => [...prev, timeSlot]);
+                        }
+                      } else {
+                        setPreferredTimeSlots((prev) =>
+                          prev.filter((slot) => slot !== timeSlot)
+                        );
+                      }
+                    }}
+                    className="mr-2"
+                    disabled={
+                      !preferredTimeSlots.includes(timeSlot) &&
+                      preferredTimeSlots.length >= 5
+                    }
+                  />
+                  <span className="text-sm">{timeSlot}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              Choose when you're most comfortable studying (minimum 1, maximum 5)
+            </p>
+          </div>
+
           {/* Generate Button */}
           <button
             onClick={generateNewPlan}
-            disabled={isGenerating || weakTopics.length === 0}
+            disabled={isGenerating || weakTopics.length === 0 || preferredTimeSlots.length === 0}
             className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-              weakTopics.length > 0 && !isGenerating
+              weakTopics.length > 0 && preferredTimeSlots.length > 0 && !isGenerating
                 ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg hover:shadow-xl"
                 : "bg-gray-200 text-gray-500 cursor-not-allowed"
             }`}
@@ -458,7 +516,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
       {/* Calendar Grid - Notion Style */}
       <div className="card p-0 overflow-hidden">
-        <div className="grid grid-cols-8 border-b border-gray-200">
+        <div className="grid grid-cols-6 border-b border-gray-200">
           {/* Header row */}
           <div className="p-4 bg-gray-50 border-r border-gray-200 font-medium text-gray-700">
             Time
@@ -477,7 +535,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
         {timeSlots.map((timeSlot, timeIndex) => (
           <div
             key={timeSlot}
-            className="grid grid-cols-8 border-b border-gray-200"
+            className="grid grid-cols-6 border-b border-gray-200"
           >
             {/* Time slot header */}
             <div className="p-4 bg-gray-50 border-r border-gray-200 font-medium text-gray-600 flex items-center">
@@ -503,8 +561,12 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                   {tasks.map((task) => (
                     <motion.div
                       key={task.id}
-                      className={`mb-2 p-2 rounded-lg border transition-all duration-200 cursor-pointer ${
-                        task.completed
+                      className={`mb-2 p-2 rounded-lg border transition-all duration-200 cursor-pointer group relative ${
+                        task.isFlashcardTask
+                          ? task.completed
+                            ? "bg-purple-50 border-purple-200"
+                            : "bg-purple-100 border-purple-300 hover:border-purple-400 shadow-sm"
+                          : task.completed
                           ? "bg-green-50 border-green-200"
                           : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
                       }`}
@@ -512,17 +574,44 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
+                      {/* Hover Tooltip */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs">
+                        <div className="font-medium mb-1">{task.activity}</div>
+                        <div className="text-gray-300 mb-1">
+                          Topic: {task.topic}
+                        </div>
+                        <div className="text-gray-300 mb-1">
+                          Duration: {task.duration} minutes
+                        </div>
+                        <div className="text-gray-300">{task.description}</div>
+                        {task.isFlashcardTask && (
+                          <div className="text-purple-300 mt-1">📚 Flashcard Review Task</div>
+                        )}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      </div>
+
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1 mb-1">
                             <div
                               className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                task.completed ? "bg-green-500" : "bg-gray-300"
+                                task.isFlashcardTask
+                                  ? task.completed
+                                    ? "bg-purple-500"
+                                    : "bg-purple-300"
+                                  : task.completed
+                                  ? "bg-green-500"
+                                  : "bg-gray-300"
                               }`}
                             />
                             <span className="text-xs font-medium text-gray-600">
                               {task.duration}min
                             </span>
+                            {task.isFlashcardTask && (
+                              <span className="text-xs font-medium text-purple-600">
+                                📚
+                              </span>
+                            )}
                           </div>
                           <h5 className="text-xs font-medium text-gray-900 mb-1 truncate">
                             {task.activity}

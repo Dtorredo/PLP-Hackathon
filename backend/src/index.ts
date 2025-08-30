@@ -110,10 +110,16 @@ app.post("/api/v1/quiz/answer", async (req: Request, res: Response) => {
 // Enhanced Study plan generation with AI
 app.post("/api/v1/plan/generate", async (req: Request, res: Response) => {
   try {
-    const { userId, dailyHours, weakTopics = [] } = req.body;
+    const { userId, dailyHours, weakTopics = [], preferredTimeSlots = [] } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: "User ID is required." });
+    }
+
+    if (preferredTimeSlots.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "At least one preferred time slot is required." });
     }
 
     if (!dailyHours || dailyHours < 2) {
@@ -131,7 +137,8 @@ app.post("/api/v1/plan/generate", async (req: Request, res: Response) => {
     const plan = await aiService.generateStudyPlan(
       userId,
       dailyHours,
-      weakTopics
+      weakTopics,
+      preferredTimeSlots
     );
 
     // Save the plan to Redis

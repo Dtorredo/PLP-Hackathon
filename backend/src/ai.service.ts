@@ -16,6 +16,7 @@ interface StudyPlanTask {
   description: string;
   completed: boolean;
   estimatedTime: number;
+  isFlashcardTask?: boolean;
 }
 
 interface StudyPlan {
@@ -23,6 +24,7 @@ interface StudyPlan {
   userId: string;
   dailyHours: number;
   weakTopics: string[];
+  preferredTimeSlots: string[];
   tasks: StudyPlanTask[];
   createdAt: Date;
   completedTasks: string[];
@@ -252,34 +254,33 @@ Please respond with:
   async generateStudyPlan(
     userId: string,
     dailyHours: number,
-    weakTopics: string[]
+    weakTopics: string[],
+    preferredTimeSlots: string[]
   ): Promise<StudyPlan> {
     if (dailyHours < 2) {
       throw new Error("Daily study hours must be at least 2");
     }
 
-    const totalMinutes = dailyHours * 60;
-    const tasks: StudyPlanTask[] = [];
-    let remainingMinutes = totalMinutes;
-
-    // Generate AI-powered study plan
+    // Generate AI-powered study plan with one topic per day
     if (this.genAI && weakTopics.length > 0) {
       try {
         const model = this.genAI.getGenerativeModel({ model: this.modelId });
-        const prompt = `Create a detailed 7-day study plan for a student who can study ${dailyHours} hours per day. 
-        
-Weak topics to focus on: ${weakTopics.join(", ")}
-        
-Generate a structured plan with:
-- Distribute topics across the week (don't put all topics in one day)
-- Time slots throughout the day (morning, afternoon, evening)
-- Activities of 20-30 minutes each
-- Mix of review, practice, and new learning
-- Specific tasks for each time slot
-- Progressive difficulty
-- Each topic should appear on different days throughout the week
 
-Format as JSON with tasks array containing: day, timeSlot, duration, topic, activity, description`;
+        // Enhanced prompt for better topic distribution
+        const prompt = `Create a 5-day study plan (Monday-Friday) for ${dailyHours} hours daily. 
+        
+Topics to focus on: ${weakTopics.join(", ")}
+Available time slots: ${preferredTimeSlots.join(", ")}
+
+Rules:
+- Assign ONE topic per day (no mixing different subjects)
+- Break each topic into 3-4 subtopics for that day
+- Use only the provided time slots: ${preferredTimeSlots.join(", ")}
+- Each session: 20-30 minutes
+- Add a "Flashcard Review" task at the end of each day
+- Distribute topics evenly across the 5 weekdays
+
+Format: JSON with tasks array containing: day (1-5), timeSlot, duration (20-30), topic, activity, description, isFlashcardTask (boolean)`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -294,16 +295,18 @@ Format as JSON with tasks array containing: day, timeSlot, duration, topic, acti
               userId,
               dailyHours,
               weakTopics,
+              preferredTimeSlots,
               tasks: aiPlan.tasks.map((task: any, index: number) => ({
                 id: `task-${index}`,
                 day: task.day || Math.floor(index / 3) + 1,
-                timeSlot: task.timeSlot || "Morning",
+                timeSlot: task.timeSlot || preferredTimeSlots[0],
                 duration: task.duration || 30,
                 topic: task.topic || weakTopics[0],
                 activity: task.activity || "Study session",
                 description: task.description || "Review and practice",
                 completed: false,
                 estimatedTime: task.duration || 30,
+                isFlashcardTask: task.isFlashcardTask || false,
               })),
               createdAt: new Date(),
               completedTasks: [],
@@ -319,35 +322,40 @@ Format as JSON with tasks array containing: day, timeSlot, duration, topic, acti
       }
     }
 
-    // Fallback: Generate default study plan with distributed topics
-    const timeSlots = ["Morning", "Afternoon", "Evening"];
+    // Fallback: Generate default study plan with one topic per day
+    const totalMinutes = dailyHours * 60;
+    const tasks: StudyPlanTask[] = [];
+
     const activities = [
       "Review concepts",
       "Practice problems",
       "Take practice quiz",
       "Read textbook",
       "Watch educational videos",
-      "Create flashcards",
       "Solve exercises",
       "Group study session",
     ];
 
-    // Distribute topics across the week
-    const topicDistribution = this.distributeTopicsAcrossWeek(weakTopics);
+    // Assign one topic per day (5 weekdays)
+    const topicsPerDay = this.assignOneTopicPerDay(weakTopics);
 
-    for (let day = 1; day <= 7; day++) {
+    for (let day = 1; day <= 5; day++) {
+      const dayTopic = topicsPerDay[day - 1];
+      if (!dayTopic) continue;
+
       let dayMinutes = 0;
-      const maxDayMinutes = Math.min(remainingMinutes, totalMinutes);
-      const dayTopics = topicDistribution[day - 1] || [];
+      const maxDayMinutes = totalMinutes;
 
-      while (dayMinutes < maxDayMinutes && dayTopics.length > 0) {
+      // Create 3-4 subtopics for the day
+      const subtopics = this.generateSubtopics(dayTopic);
+
+      // Add regular study sessions
+      for (let i = 0; i < subtopics.length && dayMinutes < maxDayMinutes; i++) {
         const duration = Math.min(
           30,
           Math.max(20, Math.floor(Math.random() * 20) + 20)
         );
-        const timeSlot =
-          timeSlots[Math.floor(Math.random() * timeSlots.length)];
-        const topic = dayTopics[Math.floor(Math.random() * dayTopics.length)];
+        const timeSlot = preferredTimeSlots[i % preferredTimeSlots.length];
         const activity =
           activities[Math.floor(Math.random() * activities.length)];
 
@@ -356,20 +364,37 @@ Format as JSON with tasks array containing: day, timeSlot, duration, topic, acti
           day,
           timeSlot,
           duration,
-          topic,
+          topic: dayTopic,
           activity,
-          description: `${activity} for ${topic}`,
+          description: `${activity}: ${subtopics[i]}`,
           completed: false,
           estimatedTime: duration,
+          isFlashcardTask: false,
         });
 
         dayMinutes += duration;
-        remainingMinutes -= duration;
-
-        if (remainingMinutes <= 0) break;
       }
 
-      if (remainingMinutes <= 0) break;
+      // Add flashcard review task at the end of the day
+      if (dayMinutes < maxDayMinutes) {
+        const flashcardDuration = Math.min(30, maxDayMinutes - dayMinutes);
+        const lastTimeSlot = preferredTimeSlots[preferredTimeSlots.length - 1];
+
+        tasks.push({
+          id: `task-${tasks.length}`,
+          day,
+          timeSlot: lastTimeSlot,
+          duration: flashcardDuration,
+          topic: dayTopic,
+          activity: "Flashcard Review",
+          description: `Generate flashcards for: ${dayTopic} - ${subtopics.join(
+            ", "
+          )}`,
+          completed: false,
+          estimatedTime: flashcardDuration,
+          isFlashcardTask: true,
+        });
+      }
     }
 
     return {
@@ -377,6 +402,7 @@ Format as JSON with tasks array containing: day, timeSlot, duration, topic, acti
       userId,
       dailyHours,
       weakTopics,
+      preferredTimeSlots,
       tasks,
       createdAt: new Date(),
       completedTasks: [],
@@ -424,6 +450,123 @@ Format as JSON with tasks array containing: day, timeSlot, duration, topic, acti
     return distribution;
   }
 
+  private assignOneTopicPerDay(topics: string[]): string[] {
+    const topicsPerDay: string[] = [];
+
+    // Initialize 5 weekdays
+    for (let i = 0; i < 5; i++) {
+      topicsPerDay[i] = "";
+    }
+
+    // Assign one topic per day, cycling through topics if needed
+    topics.forEach((topic, index) => {
+      const dayIndex = index % 5;
+      topicsPerDay[dayIndex] = topic;
+    });
+
+    // If we have fewer topics than days, repeat the last topic
+    if (topics.length < 5) {
+      for (let day = topics.length; day < 5; day++) {
+        topicsPerDay[day] = topics[topics.length - 1];
+      }
+    }
+
+    return topicsPerDay;
+  }
+
+  private generateSubtopics(topic: string): string[] {
+    const subtopicMap: { [key: string]: string[] } = {
+      DSA: [
+        "Arrays and Strings",
+        "Linked Lists",
+        "Stacks and Queues",
+        "Trees and Graphs",
+        "Dynamic Programming",
+        "Sorting Algorithms",
+      ],
+      DBMS: [
+        "Database Design",
+        "SQL Queries",
+        "Normalization",
+        "Indexing",
+        "Transaction Management",
+        "ACID Properties",
+      ],
+      Calculus: [
+        "Limits and Continuity",
+        "Derivatives",
+        "Integration",
+        "Applications of Derivatives",
+        "Series and Sequences",
+        "Multivariable Calculus",
+      ],
+      Chemistry: [
+        "Atomic Structure",
+        "Chemical Bonding",
+        "Reaction Kinetics",
+        "Thermodynamics",
+        "Organic Chemistry",
+        "Electrochemistry",
+      ],
+      Physics: [
+        "Mechanics",
+        "Thermodynamics",
+        "Electromagnetism",
+        "Optics",
+        "Modern Physics",
+        "Wave Motion",
+      ],
+    };
+
+    return (
+      subtopicMap[topic] || [
+        "Fundamental Concepts",
+        "Core Principles",
+        "Advanced Topics",
+        "Practical Applications",
+      ]
+    );
+  }
+
+  private distributeTopicsAcrossWeekdays(topics: string[]): string[][] {
+    const distribution: string[][] = [];
+
+    // Initialize 5 weekdays only
+    for (let i = 0; i < 5; i++) {
+      distribution[i] = [];
+    }
+
+    // Distribute topics across weekdays only
+    topics.forEach((topic, index) => {
+      // Spread topics across different weekdays
+      const dayIndex = index % 5;
+      distribution[dayIndex].push(topic);
+    });
+
+    // Ensure each weekday has at least one topic if possible
+    for (let day = 0; day < 5; day++) {
+      if (distribution[day].length === 0 && topics.length > 0) {
+        // Find a topic that appears less frequently
+        const topicFrequency = new Map<string, number>();
+        distribution.forEach((dayTopics) => {
+          dayTopics.forEach((topic) => {
+            topicFrequency.set(topic, (topicFrequency.get(topic) || 0) + 1);
+          });
+        });
+
+        const leastFrequentTopic = topics.reduce((least, current) => {
+          const leastFreq = topicFrequency.get(least) || 0;
+          const currentFreq = topicFrequency.get(current) || 0;
+          return currentFreq < leastFreq ? current : least;
+        });
+
+        distribution[day].push(leastFrequentTopic);
+      }
+    }
+
+    return distribution;
+  }
+
   // Replace existing generateFlashcards with this version
   async generateFlashcards(topic: string, count: number = 5): Promise<any[]> {
     const topicLower = topic.toLowerCase();
@@ -435,6 +578,7 @@ Format as JSON with tasks array containing: day, timeSlot, duration, topic, acti
 
     const prompt = `Generate ${count} educational flashcards about ${topic}.
 Format each as: "Question: [question] Answer: [answer]"
+If the answer contains a code sample, format it using Markdown (e.g., ```code```).
 Make them progressively harder, covering fundamentals to advanced concepts.`;
 
     try {
