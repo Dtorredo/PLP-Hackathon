@@ -1,18 +1,24 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
-import * as dotenv from "dotenv";
 import { AIService } from "./ai.service";
 import { RedisService } from "./redis.service";
+import { paymentService } from "./payment.service";
+// M-Pesa Configuration
+const MPESA_CONSUMER_KEY = process.env.MPESA_CONSUMER_KEY || "";
+const MPESA_CONSUMER_SECRET = process.env.MPESA_CONSUMER_SECRET || "";
+const MPESA_PASSKEY = process.env.MPESA_PASSKEY || "";
+const MPESA_BUSINESS_SHORTCODE = process.env.MPESA_BUSINESS_SHORTCODE || "";
 
-dotenv.config();
-
-export const app = express();
+const app = express();
 const port = process.env.PORT || 3001;
 
 // Initialize services
 const aiService = new AIService();
 const redisService = new RedisService();
+
+// Middleware for parsing webhook requests
+app.use("/api/v1/payment/webhook", express.raw({ type: "application/json" }));
 
 app.use(cors());
 app.use(express.json());
@@ -110,7 +116,12 @@ app.post("/api/v1/quiz/answer", async (req: Request, res: Response) => {
 // Enhanced Study plan generation with AI
 app.post("/api/v1/plan/generate", async (req: Request, res: Response) => {
   try {
-    const { userId, dailyHours, weakTopics = [], preferredTimeSlots = [] } = req.body;
+    const {
+      userId,
+      dailyHours,
+      weakTopics = [],
+      preferredTimeSlots = [],
+    } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: "User ID is required." });
@@ -351,11 +362,127 @@ app.post("/api/v1/answer/feedback", async (req: Request, res: Response) => {
   }
 });
 
+// M-Pesa Payment endpoints
+app.post(
+  "/api/v1/payment/initiate-mpesa",
+  async (req: Request, res: Response) => {
+    try {
+      const { plan, phoneNumber, userId } = req.body;
+
+      if (!plan || !phoneNumber) {
+        return res
+          .status(400)
+          .json({ error: "Plan and phone number are required" });
+      }
+
+      const reference = `AI_STUDY_${Date.now()}`;
+
+      const paymentRequest = {
+        phoneNumber: phoneNumber,
+        amount: plan.price,
+        planId: plan.id,
+        userId: userId,
+        reference: reference,
+      };
+
+      const result = await paymentService.initiateMpesaPayment(paymentRequest);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          checkoutRequestID: result.checkoutRequestID,
+          customerMessage: result.customerMessage,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      console.error("Error initiating M-Pesa payment:", error);
+      res.status(500).json({ error: "Failed to initiate payment" });
+    }
+  }
+);
+
+app.post(
+  "/api/v1/payment/mpesa-callback",
+  async (req: Request, res: Response) => {
+    try {
+      console.log("M-Pesa callback received:", req.body);
+
+      const success = await paymentService.handleMpesaCallback(req.body);
+
+      if (success) {
+        res.json({ success: true, message: "Payment processed successfully" });
+      } else {
+        res.status(400).json({ success: false, message: "Payment failed" });
+      }
+    } catch (error) {
+      console.error("Error processing M-Pesa callback:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  }
+);
+
+app.get(
+  "/api/v1/payment/subscription/:userId",
+  async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+
+      const subscription = await paymentService.getUserSubscription(userId);
+      const hasActiveSubscription = await paymentService.hasActiveSubscription(
+        userId
+      );
+
+      res.json({
+        success: true,
+        subscription,
+        hasActiveSubscription,
+      });
+    } catch (error) {
+      console.error("Error in /api/v1/payment/subscription:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to get subscription status. Please try again.",
+      });
+    }
+  }
+);
+
+app.post(
+  "/api/v1/payment/cancel/:userId",
+  async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+
+      const success = await paymentService.cancelSubscription(userId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: "Subscription cancelled successfully",
+        });
+      } else {
+        res.status(400).json({ error: "Failed to cancel subscription" });
+      }
+    } catch (error) {
+      console.error("Error in /api/v1/payment/cancel:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to cancel subscription. Please try again.",
+      });
+    }
+  }
+);
+
 // Start server
 if (process.env.NODE_ENV !== "test") {
   app.listen(port, () => {
     console.log(`AI Study Buddy backend running on http://localhost:${port}`);
   });
 }
-
-

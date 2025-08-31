@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Trophy, TrendingUp } from "lucide-react";
+import { Brain, Trophy, TrendingUp, CreditCard } from "lucide-react";
 import { LandingPage } from "./components/pages/LandingPage";
 import { ChatPage } from "./components/pages/ChatPage";
 import { StudyPlanPage } from "./components/pages/StudyPlanPage";
 import { FlashcardsPage } from "./components/pages/FlashcardsPage";
+import { PricingPage } from "./components/pages/PricingPage";
 import { auth, db } from "./lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -14,6 +15,10 @@ import { SignInPage } from "./components/pages/SignInPage";
 import { SubjectsPage } from "./components/pages/SubjectsPage";
 import type { AppState, User } from "./lib/types";
 import { LoadingSpinner } from "./components/ui/LoadingSpinner";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
@@ -211,6 +216,7 @@ function App() {
               { id: "study", label: "Study Plan" },
               { id: "flashcards", label: "Flashcards" },
               { id: "profile", label: "Profile" },
+              { id: "pricing", label: "Pricing" },
             ].map((item) => (
               <button
                 key={item.id}
@@ -221,6 +227,7 @@ function App() {
                     : "text-gray-300 hover:text-white hover:bg-secondary-700"
                 }`}
               >
+                {item.icon && <item.icon className="w-4 h-4 mr-1" />}
                 {item.label}
               </button>
             ))}
@@ -249,6 +256,11 @@ function App() {
                 user={appState.user}
                 onStateChange={setAppState}
               />
+            )}
+            {currentPage === "pricing" && (
+              <Elements stripe={stripePromise}>
+                <PricingPage user={appState.user} onStateChange={setAppState} />
+              </Elements>
             )}
             {currentPage === "profile" && (
               <ProfilePage user={appState.user} onStateChange={setAppState} />

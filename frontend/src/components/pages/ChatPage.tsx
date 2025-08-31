@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, MessageCircle, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Send, MessageCircle } from "lucide-react";
 import type { User, AppState, ChatMessage } from "../../lib/types";
 import { db } from "../../lib/firebase";
 import {
@@ -141,20 +141,6 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
     }
   };
 
-  const handleFeedback = (_messageId: string, isPositive: boolean) => {
-    const pointsToAdd = isPositive ? 2 : 1;
-    const updatedUser = { ...user, points: user.points + pointsToAdd };
-
-    onStateChange({
-      user: updatedUser,
-      currentSession: null,
-      isLoading: false,
-      error: null,
-    });
-
-    localStorage.setItem("ai-study-buddy-user", JSON.stringify(updatedUser));
-  };
-
   return (
     <div className="max-w-4xl mx-auto">
       <div className="card mb-6">
@@ -168,9 +154,29 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
         </p>
       </div>
 
-      {/* Chat Messages */}
-      <div className="card mb-6">
-        <div className="space-y-4 max-h-96 overflow-y-auto p-4">
+      {/* Input - Fixed below header */}
+      <div className="flex gap-4 mb-4">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+          placeholder="Ask me anything about your subjects..."
+          className="input-field flex-1"
+          disabled={isLoading}
+        />
+        <button
+          onClick={handleSendMessage}
+          disabled={!inputValue.trim() || isLoading}
+          className="btn-primary"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Messages Container - Scrollable below input */}
+      <div className="bg-secondary-900 rounded-lg border border-secondary-700 p-4 min-h-96 max-h-[600px] overflow-y-auto">
+        <div className="space-y-4">
           <AnimatePresence>
             {messages.map((message) => (
               <motion.div
@@ -246,9 +252,9 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
                         li: ({ children }) => (
                           <li className="text-gray-300">{children}</li>
                         ),
-                        // Customize paragraphs
+                        // Customize paragraphs - prevent line breaks and preserve code formatting
                         p: ({ children }) => (
-                          <p className="mb-3 text-gray-300 leading-relaxed">
+                          <p className="mb-3 text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
                             {children}
                           </p>
                         ),
@@ -267,42 +273,6 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
                       {message.content}
                     </ReactMarkdown>
                   </div>
-
-                  {message.role === "assistant" && (
-                    <div className="mt-4 pt-4 border-t border-secondary-700 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">
-                          Confidence:
-                        </span>
-                        <div className="w-20 bg-secondary-700 rounded-full h-2">
-                          <div
-                            className="bg-green-500 h-2 rounded-full"
-                            style={{
-                              width: `${(message.confidence || 0) * 100}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-400">
-                          {Math.round((message.confidence || 0) * 100)}%
-                        </span>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleFeedback(message.id, true)}
-                          className="text-green-500 hover:text-green-400"
-                        >
-                          <ThumbsUp className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleFeedback(message.id, false)}
-                          className="text-red-500 hover:text-red-400"
-                        >
-                          <ThumbsDown className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </motion.div>
             ))}
@@ -318,26 +288,6 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
 
           <div ref={messagesEndRef} />
         </div>
-      </div>
-
-      {/* Input */}
-      <div className="flex gap-4">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-          placeholder="Ask me anything about your subjects..."
-          className="input-field flex-1"
-          disabled={isLoading}
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim() || isLoading}
-          className="btn-primary"
-        >
-          <Send className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );

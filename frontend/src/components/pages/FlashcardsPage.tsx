@@ -35,6 +35,11 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
   const [sessionId, setSessionId] = useState<string>("");
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
+
+  // Debug: Log when flashcards change
+  useEffect(() => {
+    console.log("Flashcards state updated:", flashcards);
+  }, [flashcards]);
   const [isLoading, setIsLoading] = useState(false);
   const [flashcardHistory, setFlashcardHistory] = useState<FlashcardHistory[]>(
     []
@@ -47,24 +52,32 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
 
   const loadFlashcardHistory = async () => {
     try {
+      console.log("Loading flashcard history for user:", user.id);
       const historyRef = collection(db, "users", user.id, "flashcardHistory");
       const q = query(historyRef, orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
 
+      console.log("Found", querySnapshot.size, "flashcard history documents");
+
       const history: FlashcardHistory[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        history.push({
+        console.log("History document data:", data);
+
+        const historyItem: FlashcardHistory = {
           id: doc.id,
           prompt: data.prompt,
           module: data.module,
-          specificArea: data.specificArea,
-          flashcards: data.flashcards,
-          createdAt: data.createdAt.toDate(),
+          specificArea: data.specificArea || undefined,
+          flashcards: data.flashcards || [],
+          createdAt: data.createdAt?.toDate() || new Date(),
           lastViewed: data.lastViewed?.toDate(),
-        });
+        };
+
+        history.push(historyItem);
       });
 
+      console.log("Processed history:", history);
       setFlashcardHistory(history);
     } catch (error) {
       console.error("Error loading flashcard history:", error);
@@ -136,15 +149,20 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
   };
 
   const handleHistorySelect = (history: FlashcardHistory) => {
+    console.log("Loading history:", history);
+    console.log("History flashcards:", history.flashcards);
+
     setSelectedTopic(history.prompt);
-    setFlashcards(
-      history.flashcards.map((card) => ({
-        id: parseInt(card.id),
-        question: card.question,
-        answer: card.answer,
-        topic: history.prompt,
-      }))
-    );
+
+    const mappedFlashcards = history.flashcards.map((card) => ({
+      id: parseInt(card.id),
+      question: card.question,
+      answer: card.answer,
+      topic: history.prompt,
+    }));
+
+    console.log("Mapped flashcards:", mappedFlashcards);
+    setFlashcards(mappedFlashcards);
   };
 
   const handleProgress = async (cardId: number) => {
@@ -209,6 +227,7 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
               </p>
             </div>
             <FlashcardStack
+              key={selectedTopic} // Force re-render when topic changes
               flashcards={flashcards}
               onCardSentToBack={handleProgress}
               isLoading={isLoading}
