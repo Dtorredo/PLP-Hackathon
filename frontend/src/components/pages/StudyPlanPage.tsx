@@ -7,7 +7,6 @@ import {
   Target,
   Calendar,
   Trophy,
-  TrendingUp,
   Sparkles,
   Plus,
   X,
@@ -63,15 +62,12 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
 
-  // Load existing study plan on component mount
-  useEffect(() => {
-    loadExistingPlan();
-  }, [user.id]);
-
-  const loadExistingPlan = async () => {
+  const loadExistingPlan = useCallback(async () => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/v1/plan/current/${user.id}`
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:3001"
+        }/api/v1/plan/current/${user.id}`
       );
 
       if (response.ok) {
@@ -91,7 +87,12 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user.id]);
+
+  // Load existing study plan on component mount
+  useEffect(() => {
+    loadExistingPlan();
+  }, [loadExistingPlan]);
 
   const addTopic = () => {
     if (
@@ -118,7 +119,9 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
     try {
       const response = await fetch(
-        "http://localhost:3001/api/v1/plan/generate",
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:3001"
+        }/api/v1/plan/generate`,
         {
           method: "POST",
           headers: {
@@ -154,7 +157,9 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/v1/plan/current/${user.id}`,
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:3001"
+        }/api/v1/plan/current/${user.id}`,
         {
           method: "DELETE",
         }
@@ -546,7 +551,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
           <div className="p-4 bg-secondary-900 border-r border-secondary-700 font-medium text-gray-300">
             Time
           </div>
-          {days.map((day, index) => (
+          {days.map((day) => (
             <div
               key={day}
               className="p-4 bg-secondary-900 border-r border-secondary-700 font-medium text-gray-300 text-center"
@@ -557,7 +562,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
         </div>
 
         {/* Time slots rows */}
-        {timeSlots.map((timeSlot, timeIndex) => (
+        {timeSlots.map((timeSlot) => (
           <div
             key={timeSlot}
             className="grid grid-cols-6 border-b border-secondary-700"

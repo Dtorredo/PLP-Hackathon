@@ -138,9 +138,10 @@ export class PaymentService {
         PartyA: paymentRequest.phoneNumber,
         PartyB: MPESA_BUSINESS_SHORTCODE,
         PhoneNumber: paymentRequest.phoneNumber,
-        CallBackURL: `${
-          process.env.BACKEND_URL || "http://localhost:3001"
-        }/api/v1/payment/mpesa-callback`,
+        CallBackURL:
+          process.env.NODE_ENV === "production"
+            ? "https://plp-hackathon.fly.dev/api/v1/payment/mpesa-callback"
+            : "https://webhook.site/8f7d6e5c-4b3a-2f1e-0d9c-8b7a6f5e4d3c",
         AccountReference: paymentRequest.reference,
         TransactionDesc: `AI Study Buddy - ${paymentRequest.planId}`,
       };

@@ -14,8 +14,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 
-# Install all dependencies
-RUN pnpm install --prod
+# Install all dependencies (including dev dependencies for building)
+RUN pnpm install
 
 # Copy the rest of the source code
 COPY . .

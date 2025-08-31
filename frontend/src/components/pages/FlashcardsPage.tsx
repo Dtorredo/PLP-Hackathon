@@ -90,7 +90,7 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
 
     try {
       const response = await fetch(
-        "http://localhost:3001/api/v1/flashcards/generate",
+        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/v1/flashcards/generate`,
         {
           method: "POST",
           headers: {

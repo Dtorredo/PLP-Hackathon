@@ -80,7 +80,7 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
       );
 
       // Call AI service for response
-      const response = await fetch("http://localhost:3001/api/v1/ask", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/v1/ask`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

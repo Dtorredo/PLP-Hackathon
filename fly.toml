@@ -1,0 +1,54 @@
+# fly.toml app configuration file generated for plp-hackathon on 2025-08-31T20:30:00Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+
+app = "plp-hackathon"
+primary_region = "iad"
+
+[build]
+
+[env]
+  PORT = "3001"
+  NODE_ENV = "production"
+  # Note: Set M-Pesa secrets using: flyctl secrets set MPESA_CONSUMER_KEY=your_key MPESA_CONSUMER_SECRET=your_secret MPESA_PASSKEY=your_passkey MPESA_BUSINESS_SHORTCODE=174379
+  # Note: Set Redis secrets using: flyctl secrets set REDIS_HOST=your_redis_host REDIS_PORT=your_redis_port REDIS_PASSWORD=your_redis_password
+  # Note: Set Firebase secrets using: flyctl secrets set FIREBASE_API_KEY=your_key FIREBASE_AUTH_DOMAIN=your_domain FIREBASE_PROJECT_ID=your_project_id FIREBASE_STORAGE_BUCKET=your_bucket FIREBASE_MESSAGING_SENDER_ID=your_sender_id FIREBASE_APP_ID=your_app_id
+  # Note: Set Google AI secret using: flyctl secrets set GEMINI_API_KEY=your_gemini_api_key
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 3001
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "1s"
+    restart_limit = 0

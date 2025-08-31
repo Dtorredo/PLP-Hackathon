@@ -480,6 +480,15 @@ app.post(
   }
 );
 
+// Health check endpoint
+app.get("/api/v1/status", (req: Request, res: Response) => {
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+  });
+});
+
 // Start server
 if (process.env.NODE_ENV !== "test") {
   app.listen(port, () => {

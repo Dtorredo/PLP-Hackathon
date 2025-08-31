@@ -30,7 +30,7 @@ export interface UserSubscription {
 
 export class PaymentService {
   private static instance: PaymentService;
-  private backendUrl = "http://localhost:3001";
+  private backendUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
   private constructor() {}
 
