@@ -269,8 +269,8 @@ export function PricingPage({ user }: PricingPageProps) {
               What payment methods do you accept?
             </h3>
             <p className="text-sm text-gray-300 leading-relaxed">
-              We accept all major credit cards through our secure payment
-              partner Stripe.
+              We accept M-Pesa mobile payments for secure and convenient
+              transactions.
             </p>
           </div>
 
