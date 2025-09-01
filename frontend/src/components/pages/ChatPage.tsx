@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, MessageCircle } from "lucide-react";
-import type { User, AppState, ChatMessage } from "../../lib/types";
+import type { User, ChatMessage } from "../../lib/types";
 import { db } from "../../lib/firebase";
 import {
   collection,
@@ -16,10 +16,9 @@ import remarkGfm from "remark-gfm";
 
 interface ChatPageProps {
   user: User;
-  onStateChange: (state: AppState) => void;
 }
 
-export function ChatPage({ user, onStateChange }: ChatPageProps) {
+export function ChatPage({ user }: ChatPageProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -80,18 +79,21 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
       );
 
       // Call AI service for response
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/v1/ask`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sessionId,
-          userId: user.id,
-          text: inputValue,
-          mode: "explain",
-        }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/v1/ask`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sessionId,
+            userId: user.id,
+            text: inputValue,
+            mode: "explain",
+          }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -205,8 +207,7 @@ export function ChatPage({ user, onStateChange }: ChatPageProps) {
                           className,
                           children,
                           ...props
-                        }) => {
-                          const match = /language-(\w+)/.exec(className || "");
+                        }: any) => {
                           return !inline ? (
                             <pre className="bg-secondary-900 p-3 rounded-lg overflow-x-auto">
                               <code className={className} {...props}>

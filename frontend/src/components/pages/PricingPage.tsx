@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Crown, Star, Zap } from "lucide-react";
-import type { User, AppState } from "../../lib/types";
+import type { User } from "../../lib/types";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { paymentService } from "../../lib/payment";
 // M-Pesa payment integration
 
 interface PricingPageProps {
   user: User;
-  onStateChange: (state: AppState) => void;
 }
 
-export function PricingPage({ user, onStateChange }: PricingPageProps) {
+export function PricingPage({ user }: PricingPageProps) {
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [userSubscription, setUserSubscription] = useState<any>(null);
 
   useEffect(() => {
     // TODO: Load plans from your backend
@@ -67,7 +66,9 @@ export function PricingPage({ user, onStateChange }: PricingPageProps) {
     }
 
     // Prompt for phone number
-    const phoneNumber = prompt("Please enter your M-Pesa phone number (e.g., 254700000000):");
+    const phoneNumber = prompt(
+      "Please enter your M-Pesa phone number (e.g., 254700000000):"
+    );
     if (!phoneNumber) {
       alert("Phone number is required for M-Pesa payment");
       return;
@@ -77,11 +78,19 @@ export function PricingPage({ user, onStateChange }: PricingPageProps) {
     setSelectedPlan(plan);
 
     try {
-      const result = await paymentService.initializePayment(plan, phoneNumber, user?.email || "");
+      const result = await paymentService.initializePayment(
+        plan,
+        phoneNumber,
+        user?.email || ""
+      );
       console.log("Payment result:", result);
 
       if (result.success) {
-        alert(`M-Pesa payment initiated! ${result.customerMessage || 'Check your phone for the payment prompt.'}`);
+        alert(
+          `M-Pesa payment initiated! ${
+            result.customerMessage || "Check your phone for the payment prompt."
+          }`
+        );
         // You can redirect to a success page or update UI
       } else {
         alert(`Payment failed: ${result.error}`);
@@ -107,8 +116,8 @@ export function PricingPage({ user, onStateChange }: PricingPageProps) {
     }
   };
 
-  const isCurrentPlan = (planId: string) => {
-    return userSubscription?.planId === planId;
+  const isCurrentPlan = (_planId: string) => {
+    return false; // TODO: Implement subscription checking
   };
 
   return (
@@ -217,7 +226,7 @@ export function PricingPage({ user, onStateChange }: PricingPageProps) {
                 What you will get:
               </h4>
               <ul className="space-y-2">
-                {plan.features.map((feature, featureIndex) => (
+                {plan.features.map((feature: string, featureIndex: number) => (
                   <li key={featureIndex} className="flex items-start">
                     <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                     <span className="text-sm text-gray-300">{feature}</span>

@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
-import type {
-  User,
-  AppState,
-  FlashcardHistory,
-  Flashcard,
-} from "../../lib/types";
+import type { User, FlashcardHistory } from "../../lib/types";
 import { FlashcardStack } from "../features/FlashcardStack";
+import type { FlashcardData } from "../features/FlashcardStack";
 import { CourseSidebar } from "../features/CourseSidebar";
 import {
   collection,
@@ -19,19 +15,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
-interface FlashcardData {
-  id: number;
-  question: string;
-  answer: string;
-  topic?: string;
-}
-
 interface FlashcardsPageProps {
   user: User;
-  onStateChange: (state: AppState) => void;
 }
 
-export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
+export function FlashcardsPage({ user }: FlashcardsPageProps) {
   const [sessionId, setSessionId] = useState<string>("");
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
@@ -90,7 +78,9 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/v1/flashcards/generate`,
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:3001"
+        }/api/v1/flashcards/generate`,
         {
           method: "POST",
           headers: {
@@ -155,7 +145,7 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
     setSelectedTopic(history.prompt);
 
     const mappedFlashcards = history.flashcards.map((card) => ({
-      id: parseInt(card.id),
+      id: card.id,
       question: card.question,
       answer: card.answer,
       topic: history.prompt,
@@ -165,7 +155,7 @@ export function FlashcardsPage({ user, onStateChange }: FlashcardsPageProps) {
     setFlashcards(mappedFlashcards);
   };
 
-  const handleProgress = async (cardId: number) => {
+  const handleProgress = async (cardId: string | number) => {
     if (!sessionId || !selectedTopic) return;
 
     const sessionRef = doc(

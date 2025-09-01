@@ -1,27 +1,12 @@
-import { motion } from "framer-motion";
 import { User, Trophy, TrendingUp, Target, Award } from "lucide-react";
-import type { User as UserType, AppState } from "../../lib/types";
+import type { User as UserType } from "../../lib/types";
 import { formatDate } from "../../lib/utils";
 
 interface ProfilePageProps {
   user: UserType;
-  onStateChange: (state: AppState) => void;
 }
 
 export function ProfilePage({ user }: ProfilePageProps) {
-  const getTopicStrengthColor = (strength: number) => {
-    if (strength >= 0.8) return "text-green-600";
-    if (strength >= 0.6) return "text-yellow-600";
-    return "text-red-600";
-  };
-
-  const getTopicStrengthLabel = (strength: number) => {
-    if (strength >= 0.8) return "Strong";
-    if (strength >= 0.6) return "Good";
-    if (strength >= 0.4) return "Fair";
-    return "Needs Work";
-  };
-
   const getBadges = () => {
     return user.achievements || [];
   };

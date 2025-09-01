@@ -1,20 +1,7 @@
-import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CheckCircle } from "lucide-react";
 
 export function PaymentSuccessPage() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Redirect back to the main app after 5 seconds
-    const timer = setTimeout(() => {
-      navigate("/");
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [navigate]);
-
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <motion.div
@@ -35,16 +22,8 @@ export function PaymentSuccessPage() {
         </div>
 
         <div className="space-y-4">
-          <button
-            onClick={() => navigate("/")}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to App
-          </button>
-
           <p className="text-sm text-gray-400">
-            You will be redirected automatically in 5 seconds...
+            Your subscription is now active!
           </p>
         </div>
       </motion.div>

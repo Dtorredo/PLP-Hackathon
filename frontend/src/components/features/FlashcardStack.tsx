@@ -3,7 +3,7 @@ import type { StackableItem } from "../../lib/types";
 import { Flashcard } from "./Flashcard";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 
-interface FlashcardData extends StackableItem {
+export interface FlashcardData extends StackableItem {
   question: string;
   answer: string;
   topic?: string;

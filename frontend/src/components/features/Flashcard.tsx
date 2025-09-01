@@ -9,7 +9,7 @@ interface FlashcardProps {
 // Function to format answer with syntax highlighting for code blocks
 function formatAnswer(answer: string): string {
   return answer
-    .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    .replace(/```(\w+)?\n([\s\S]*?)```/g, (_match, lang, code) => {
       const language = lang || "text";
       return `<div class="bg-secondary-700 rounded-lg p-4 my-3 border border-secondary-600">
         <div class="text-xs text-gray-400 mb-2 font-mono">${language}</div>
