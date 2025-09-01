@@ -13,9 +13,36 @@ const MPESA_BUSINESS_SHORTCODE = process.env.MPESA_BUSINESS_SHORTCODE || "";
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Initialize services
-const aiService = new AIService();
-const redisService = new RedisService();
+// Helper function to check if services are available
+const requireService = (service: any, serviceName: string) => {
+  if (!service) {
+    throw new Error(`${serviceName} not available`);
+  }
+};
+
+// Initialize services with error handling
+let aiService: AIService | null = null;
+let redisService: RedisService | null = null;
+
+try {
+  aiService = new AIService();
+  console.log("AI Service initialized successfully");
+} catch (error) {
+  console.error("Failed to initialize AI Service:", error);
+}
+
+try {
+  redisService = new RedisService();
+  console.log("Redis Service initialized successfully");
+} catch (error) {
+  console.error("Failed to initialize Redis Service:", error);
+}
+
+console.log(
+  `Services status - AI: ${aiService ? "OK" : "FAILED"}, Redis: ${
+    redisService ? "OK" : "FAILED"
+  }`
+);
 
 // Middleware for parsing webhook requests
 app.use("/api/v1/payment/webhook", express.raw({ type: "application/json" }));
@@ -31,6 +58,10 @@ app.get("/api/v1/status", (req: Request, res: Response) => {
 // Ask question endpoint - now with AI
 app.post("/api/v1/ask", async (req: Request, res: Response) => {
   try {
+    if (!aiService || !redisService) {
+      return res.status(503).json({ error: "Services not available" });
+    }
+
     const { sessionId, userId, text, mode = "explain" } = req.body;
 
     if (!text) {
@@ -68,6 +99,10 @@ app.post("/api/v1/ask", async (req: Request, res: Response) => {
 // Quiz endpoints
 app.post("/api/v1/quiz/start", async (req: Request, res: Response) => {
   try {
+    if (!aiService) {
+      return res.status(503).json({ error: "AI Service not available" });
+    }
+
     const { userId, topics = [], count = 5 } = req.body;
 
     if (!userId) {
@@ -491,7 +526,16 @@ app.get("/api/v1/status", (req: Request, res: Response) => {
 
 // Start server
 if (process.env.NODE_ENV !== "test") {
-  app.listen(Number(port), "0.0.0.0", () => {
-    console.log(`AI Study Buddy backend running on http://0.0.0.0:${port}`);
-  });
+  console.log(`Attempting to start server on port ${port}...`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`M-Pesa Consumer Key length: ${MPESA_CONSUMER_KEY.length}`);
+
+  app
+    .listen(Number(port), "0.0.0.0", () => {
+      console.log(`AI Study Buddy backend running on http://0.0.0.0:${port}`);
+      console.log(`Server started successfully!`);
+    })
+    .on("error", (error) => {
+      console.error(`Failed to start server:`, error);
+    });
 }
