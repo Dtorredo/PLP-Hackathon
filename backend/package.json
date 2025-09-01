@@ -11,16 +11,13 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@types/ioredis": "^4.28.10",
     "@types/node-fetch": "^2.6.13",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "firebase": "^12.2.1",
-    "ioredis": "^5.7.0",
     "node-fetch": "^2.7.0",
-    "redis": "^4.6.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

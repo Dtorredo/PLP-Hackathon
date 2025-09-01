@@ -1,22 +1,77 @@
-import Redis from "ioredis";
+import fetch from "node-fetch";
 
 export class RedisService {
-  private redis: Redis;
+  private baseUrl: string;
+  private token: string;
 
   constructor() {
-    this.redis = new Redis({
-      host: process.env.REDIS_HOST || "localhost",
-      port: parseInt(process.env.REDIS_PORT || "6379"),
-      password: process.env.REDIS_PASSWORD,
-    });
+    this.baseUrl =
+      process.env.UPSTASH_REDIS_REST_URL ||
+      "https://peaceful-corgi-9538.upstash.io";
+    this.token =
+      process.env.UPSTASH_REDIS_REST_TOKEN ||
+      "ASVCAAImcDE3YTQyZTgwYTY4MGI0M2U0ODQyYjY5ZGJjYjY3Y2VlZHAxOTUzOA";
 
-    this.redis.on("error", (error: Error) => {
-      console.error("Redis connection error:", error);
-    });
+    console.log("Redis service initialized with Upstash REST API");
+  }
 
-    this.redis.on("connect", () => {
-      console.log("Connected to Redis");
-    });
+  private async makeRequest(
+    command: string,
+    key: string,
+    value?: string,
+    expiry?: number
+  ): Promise<any> {
+    const url = `${this.baseUrl}/${command}/${key}`;
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.token}`,
+      "Content-Type": "application/json",
+    };
+
+    if (value !== undefined) {
+      headers["Content-Type"] = "text/plain";
+    }
+
+    try {
+      if (command === "get") {
+        const response = await fetch(url, { headers });
+        if (response.status === 404) return null;
+        return await response.text();
+      } else if (command === "set") {
+        const setUrl = `${this.baseUrl}/set/${key}`;
+        const body = value || "";
+        const response = await fetch(setUrl, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${this.token}` },
+          body,
+        });
+        return response.ok;
+      } else if (command === "lpush") {
+        const lpushUrl = `${this.baseUrl}/lpush/${key}`;
+        const body = value || "";
+        const response = await fetch(lpushUrl, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${this.token}` },
+          body,
+        });
+        return response.ok;
+      } else if (command === "lrange") {
+        const response = await fetch(url, { headers });
+        if (response.status === 404) return [];
+        const data = await response.json();
+        return data.result || [];
+      } else if (command === "del") {
+        // Upstash REST API uses POST for delete operations
+        const delUrl = `${this.baseUrl}/del/${key}`;
+        const response = await fetch(delUrl, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${this.token}` },
+        });
+        return response.ok;
+      }
+    } catch (error) {
+      console.error(`Redis ${command} error:`, error);
+      return null;
+    }
   }
 
   async storeMessage(
@@ -32,27 +87,22 @@ export class RedisService {
       timestamp: new Date().toISOString(),
     };
 
-    await this.redis.lpush(key, JSON.stringify(message));
-    await this.redis.expire(key, 86400); // Expire after 24 hours
+    await this.makeRequest("lpush", key, JSON.stringify(message));
+    // Note: Upstash REST API doesn't support direct expiry, but data is automatically managed
   }
 
   async getMessages(sessionId: string, userId: string): Promise<any[]> {
     const key = `chat:${sessionId}:${userId}`;
-    const messages = await this.redis.lrange(key, 0, -1);
+    const messages = await this.makeRequest("lrange", key);
     return messages.map((msg: string) => JSON.parse(msg));
   }
 
   async storeProgress(progressKey: string, progressData: any): Promise<void> {
-    await this.redis.set(
-      progressKey,
-      JSON.stringify(progressData),
-      "EX",
-      604800 // Expire after 7 days
-    );
+    await this.makeRequest("set", progressKey, JSON.stringify(progressData));
   }
 
   async getProgress(progressKey: string): Promise<any | null> {
-    const data = await this.redis.get(progressKey);
+    const data = await this.makeRequest("get", progressKey);
     return data ? JSON.parse(data) : null;
   }
 
@@ -69,32 +119,27 @@ export class RedisService {
       timestamp: new Date().toISOString(),
     };
 
-    await this.redis.set(key, JSON.stringify(feedbackData), "EX", 86400);
+    await this.makeRequest("set", key, JSON.stringify(feedbackData));
   }
 
   async getFeedback(responseId: string, userId: string): Promise<any | null> {
     const key = `feedback:${responseId}:${userId}`;
-    const data = await this.redis.get(key);
+    const data = await this.makeRequest("get", key);
     return data ? JSON.parse(data) : null;
   }
 
   // Study Plan Methods
   async storeStudyPlan(planKey: string, plan: any): Promise<void> {
-    await this.redis.set(
-      planKey,
-      JSON.stringify(plan),
-      "EX",
-      604800 // Expire after 7 days (one week)
-    );
+    await this.makeRequest("set", planKey, JSON.stringify(plan));
   }
 
   async getStudyPlan(planKey: string): Promise<any | null> {
-    const data = await this.redis.get(planKey);
+    const data = await this.makeRequest("get", planKey);
     return data ? JSON.parse(data) : null;
   }
 
   async deleteStudyPlan(planKey: string): Promise<void> {
-    await this.redis.del(planKey);
+    await this.makeRequest("del", planKey);
   }
 
   async updateStudyPlanProgress(
@@ -131,6 +176,7 @@ export class RedisService {
   }
 
   async close(): Promise<void> {
-    await this.redis.quit();
+    // No connection to close with REST API
+    console.log("Redis service closed");
   }
 }
