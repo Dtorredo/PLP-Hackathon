@@ -186,6 +186,9 @@ app.post("/api/v1/quiz/answer", async (req: Request, res: Response) => {
 // Enhanced Study plan generation with AI
 app.post("/api/v1/plan/generate", async (req: Request, res: Response) => {
   try {
+    if (!aiService || !redisService) {
+      return res.status(503).json({ error: "Services not available" });
+    }
     const {
       userId,
       dailyHours,
@@ -242,6 +245,9 @@ app.post("/api/v1/plan/generate", async (req: Request, res: Response) => {
 // Get current study plan
 app.get("/api/v1/plan/current/:userId", async (req: Request, res: Response) => {
   try {
+    if (!redisService) {
+      return res.status(503).json({ error: "Redis Service not available" });
+    }
     const { userId } = req.params;
 
     if (!userId) {
@@ -296,6 +302,9 @@ app.delete(
   "/api/v1/plan/current/:userId",
   async (req: Request, res: Response) => {
     try {
+      if (!redisService) {
+        return res.status(503).json({ error: "Redis Service not available" });
+      }
       const { userId } = req.params;
 
       if (!userId) {
@@ -322,6 +331,9 @@ app.delete(
 // Update study plan progress
 app.post("/api/v1/plan/progress", async (req: Request, res: Response) => {
   try {
+    if (!redisService) {
+      return res.status(503).json({ error: "Redis Service not available" });
+    }
     const { userId, planId, taskId, completed } = req.body;
 
     if (!userId || !planId || !taskId) {
@@ -386,6 +398,9 @@ app.post("/api/v1/plan/progress", async (req: Request, res: Response) => {
 // Flashcard generation
 app.post("/api/v1/flashcards/generate", async (req: Request, res: Response) => {
   try {
+    if (!aiService) {
+      return res.status(503).json({ error: "AI Service not available" });
+    }
     const { topic, count = 5 } = req.body;
 
     if (!topic) {
@@ -412,6 +427,9 @@ app.post("/api/v1/flashcards/generate", async (req: Request, res: Response) => {
 // User feedback
 app.post("/api/v1/answer/feedback", async (req: Request, res: Response) => {
   try {
+    if (!redisService) {
+      return res.status(503).json({ error: "Redis Service not available" });
+    }
     const { responseId, userId, isPositive, feedback } = req.body;
 
     if (!responseId || !userId) {
