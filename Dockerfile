@@ -23,5 +23,9 @@ COPY . .
 # Build the project
 RUN pnpm run build
 
+# Ensure backend is built properly
+RUN cd backend && pnpm run build
+RUN ls -la backend/dist/
+
 # The command to run the backend server
 CMD ["pnpm", "--filter", "backend", "start"]

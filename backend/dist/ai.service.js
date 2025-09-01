@@ -5,7 +5,7 @@ const generative_ai_1 = require("@google/generative-ai");
 class AIService {
     constructor() {
         this.genAI = null;
-        this.modelId = 'gemini-pro';
+        this.modelId = "gemini-2.5-flash";
         this.fallbackResponses = {
             "chain rule": {
                 answer: "The chain rule is a fundamental theorem in calculus that allows us to find the derivative of composite functions.",
@@ -38,7 +38,7 @@ class AIService {
                 confidence: 0.9,
             },
         };
-        const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyAjmbLFqxETp-xrYyCZHwJ0nx6YlE-g3Jw';
+        const apiKey = process.env.GEMINI_API_KEY || "AIzaSyAjmbLFqxETp-xrYyCZHwJ0nx6YlE-g3Jw";
         if (apiKey) {
             this.genAI = new generative_ai_1.GoogleGenerativeAI(apiKey);
         }
@@ -114,36 +114,48 @@ class AIService {
         return `You are an AI study buddy. Mode: ${mode}.
 Question: ${question}
 
-Please respond with:
-- A concise answer.
-- A short explanation section labeled "Explanation:".
-- 3 short practice steps labeled "Practice:" as a bulleted list.`;
+Please respond in a clear, structured format:
+
+**Concise Answer:**
+[Provide a brief, direct answer to the question]
+
+**Explanation:**
+[Give a detailed explanation of the concept, breaking it down into understandable parts]
+
+**Practice:**
+- [First practice activity or exercise]
+- [Second practice activity or exercise] 
+- [Third practice activity or exercise]
+
+Make sure to use proper markdown formatting with **bold** headers and bullet points for the practice section.`;
     }
     extractSection(text, sectionLabel) {
-        const regex = new RegExp(`${sectionLabel}[:\n]+([\\s\\S]*)`, "i");
+        // Handle both "Explanation:" and "**Explanation:**" formats
+        const regex = new RegExp(`\\*\\*${sectionLabel}\\*\\*[:\n]+([\\s\\S]*?)(?=\\*\\*|$)`, "i");
         const match = text.match(regex);
         return match ? match[1].trim() : null;
     }
     extractPractice(text) {
-        const practiceLabelIndex = text.toLowerCase().indexOf("practice");
-        if (practiceLabelIndex === -1)
-            return [
-                "Review the basic concepts",
-                "Practice with similar problems",
-                "Take a quiz to test your understanding",
-            ];
-        const lines = text.slice(practiceLabelIndex).split("\n");
-        const items = lines
-            .map((l) => l.replace(/^[-*\d\.\)\s]+/, "").trim())
-            .filter((l) => l.length > 0)
-            .slice(0, 3);
-        return items.length > 0
-            ? items
-            : [
-                "Review the basic concepts",
-                "Practice with similar problems",
-                "Take a quiz to test your understanding",
-            ];
+        // Look for the Practice section with markdown formatting
+        const practiceRegex = /\*\*Practice:\*\*[\s\S]*?(- [^\n]+(?:\n|$))+/i;
+        const match = text.match(practiceRegex);
+        if (match) {
+            const practiceSection = match[0];
+            const items = practiceSection
+                .split("\n")
+                .map((line) => line.replace(/^[-*\d\.\)\s]+/, "").trim())
+                .filter((line) => line.length > 0 && !line.includes("**Practice:**"))
+                .slice(0, 3);
+            return items.length > 0 ? items : this.getDefaultPractice();
+        }
+        return this.getDefaultPractice();
+    }
+    getDefaultPractice() {
+        return [
+            "Review the basic concepts",
+            "Practice with similar problems",
+            "Take a quiz to test your understanding",
+        ];
     }
     async generateQuiz(topics, count) {
         return [
@@ -183,38 +195,273 @@ Please respond with:
             newScore: isCorrect ? 10 : 0,
         };
     }
-    async generateStudyPlan(userId, timeframeDays) {
+    async generateStudyPlan(userId, dailyHours, weakTopics, preferredTimeSlots) {
+        if (dailyHours < 2) {
+            throw new Error("Daily study hours must be at least 2");
+        }
+        // Generate AI-powered study plan with one topic per day
+        if (this.genAI && weakTopics.length > 0) {
+            try {
+                const model = this.genAI.getGenerativeModel({ model: this.modelId });
+                // Enhanced prompt for better topic distribution
+                const prompt = `Create a 5-day study plan (Monday-Friday) for ${dailyHours} hours daily. 
+        
+Topics to focus on: ${weakTopics.join(", ")}
+Available time slots: ${preferredTimeSlots.join(", ")}
+
+Rules:
+- Assign ONE topic per day (no mixing different subjects)
+- Break each topic into 3-4 subtopics for that day
+- Use only the provided time slots: ${preferredTimeSlots.join(", ")}
+- Each session: 20-30 minutes
+- Add a "Flashcard Review" task at the end of each day
+- Distribute topics evenly across the 5 weekdays
+
+Format: JSON with tasks array containing: day (1-5), timeSlot, duration (20-30), topic, activity, description, isFlashcardTask (boolean)`;
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const planText = response.text().trim();
+                // Try to parse AI response, fallback to default if it fails
+                try {
+                    const aiPlan = JSON.parse(planText);
+                    if (aiPlan.tasks && Array.isArray(aiPlan.tasks)) {
+                        return {
+                            id: Date.now().toString(),
+                            userId,
+                            dailyHours,
+                            weakTopics,
+                            preferredTimeSlots,
+                            tasks: aiPlan.tasks.map((task, index) => ({
+                                id: `task-${index}`,
+                                day: task.day || Math.floor(index / 3) + 1,
+                                timeSlot: task.timeSlot || preferredTimeSlots[0],
+                                duration: task.duration || 30,
+                                topic: task.topic || weakTopics[0],
+                                activity: task.activity || "Study session",
+                                description: task.description || "Review and practice",
+                                completed: false,
+                                estimatedTime: task.duration || 30,
+                                isFlashcardTask: task.isFlashcardTask || false,
+                            })),
+                            createdAt: new Date(),
+                            completedTasks: [],
+                            weeklyProgress: 0,
+                            badges: [],
+                        };
+                    }
+                }
+                catch (parseError) {
+                    console.error("Failed to parse AI study plan:", parseError);
+                }
+            }
+            catch (error) {
+                console.error("AI study plan generation failed:", error);
+            }
+        }
+        // Fallback: Generate default study plan with one topic per day
+        const totalMinutes = dailyHours * 60;
+        const tasks = [];
+        const activities = [
+            "Review concepts",
+            "Practice problems",
+            "Take practice quiz",
+            "Read textbook",
+            "Watch educational videos",
+            "Solve exercises",
+            "Group study session",
+        ];
+        // Assign one topic per day (5 weekdays)
+        const topicsPerDay = this.assignOneTopicPerDay(weakTopics);
+        for (let day = 1; day <= 5; day++) {
+            const dayTopic = topicsPerDay[day - 1];
+            if (!dayTopic)
+                continue;
+            let dayMinutes = 0;
+            const maxDayMinutes = totalMinutes;
+            // Create 3-4 subtopics for the day
+            const subtopics = this.generateSubtopics(dayTopic);
+            // Add regular study sessions
+            for (let i = 0; i < subtopics.length && dayMinutes < maxDayMinutes; i++) {
+                const duration = Math.min(30, Math.max(20, Math.floor(Math.random() * 20) + 20));
+                const timeSlot = preferredTimeSlots[i % preferredTimeSlots.length];
+                const activity = activities[Math.floor(Math.random() * activities.length)];
+                tasks.push({
+                    id: `task-${tasks.length}`,
+                    day,
+                    timeSlot,
+                    duration,
+                    topic: dayTopic,
+                    activity,
+                    description: `${activity}: ${subtopics[i]}`,
+                    completed: false,
+                    estimatedTime: duration,
+                    isFlashcardTask: false,
+                });
+                dayMinutes += duration;
+            }
+            // Add flashcard review task at the end of the day
+            if (dayMinutes < maxDayMinutes) {
+                const flashcardDuration = Math.min(30, maxDayMinutes - dayMinutes);
+                const lastTimeSlot = preferredTimeSlots[preferredTimeSlots.length - 1];
+                tasks.push({
+                    id: `task-${tasks.length}`,
+                    day,
+                    timeSlot: lastTimeSlot,
+                    duration: flashcardDuration,
+                    topic: dayTopic,
+                    activity: "Flashcard Review",
+                    description: `Generate flashcards for: ${dayTopic} - ${subtopics.join(", ")}`,
+                    completed: false,
+                    estimatedTime: flashcardDuration,
+                    isFlashcardTask: true,
+                });
+            }
+        }
         return {
             id: Date.now().toString(),
             userId,
-            timeframeDays,
-            tasks: [
-                {
-                    day: 1,
-                    topics: ["calculus"],
-                    tasks: [
-                        "Review derivatives",
-                        "Practice chain rule problems",
-                        "Take a mini-quiz",
-                    ],
-                    estimatedTime: 60,
-                    completed: false,
-                },
-                {
-                    day: 2,
-                    topics: ["algebra"],
-                    tasks: [
-                        "Review quadratic equations",
-                        "Practice factoring",
-                        "Solve word problems",
-                    ],
-                    estimatedTime: 45,
-                    completed: false,
-                },
-            ],
+            dailyHours,
+            weakTopics,
+            preferredTimeSlots,
+            tasks,
             createdAt: new Date(),
-            completedDays: [],
+            completedTasks: [],
+            weeklyProgress: 0,
+            badges: [],
         };
+    }
+    distributeTopicsAcrossWeek(topics) {
+        const distribution = [];
+        // Initialize 7 days
+        for (let i = 0; i < 7; i++) {
+            distribution[i] = [];
+        }
+        // Distribute topics across the week
+        topics.forEach((topic, index) => {
+            // Spread topics across different days
+            const dayIndex = index % 7;
+            distribution[dayIndex].push(topic);
+        });
+        // Ensure each day has at least one topic if possible
+        for (let day = 0; day < 7; day++) {
+            if (distribution[day].length === 0 && topics.length > 0) {
+                // Find a topic that appears less frequently
+                const topicFrequency = new Map();
+                distribution.forEach((dayTopics) => {
+                    dayTopics.forEach((topic) => {
+                        topicFrequency.set(topic, (topicFrequency.get(topic) || 0) + 1);
+                    });
+                });
+                const leastFrequentTopic = topics.reduce((least, current) => {
+                    const leastFreq = topicFrequency.get(least) || 0;
+                    const currentFreq = topicFrequency.get(current) || 0;
+                    return currentFreq < leastFreq ? current : least;
+                });
+                distribution[day].push(leastFrequentTopic);
+            }
+        }
+        return distribution;
+    }
+    assignOneTopicPerDay(topics) {
+        const topicsPerDay = [];
+        // Initialize 5 weekdays
+        for (let i = 0; i < 5; i++) {
+            topicsPerDay[i] = "";
+        }
+        // Assign one topic per day, cycling through topics if needed
+        topics.forEach((topic, index) => {
+            const dayIndex = index % 5;
+            topicsPerDay[dayIndex] = topic;
+        });
+        // If we have fewer topics than days, repeat the last topic
+        if (topics.length < 5) {
+            for (let day = topics.length; day < 5; day++) {
+                topicsPerDay[day] = topics[topics.length - 1];
+            }
+        }
+        return topicsPerDay;
+    }
+    generateSubtopics(topic) {
+        const subtopicMap = {
+            DSA: [
+                "Arrays and Strings",
+                "Linked Lists",
+                "Stacks and Queues",
+                "Trees and Graphs",
+                "Dynamic Programming",
+                "Sorting Algorithms",
+            ],
+            DBMS: [
+                "Database Design",
+                "SQL Queries",
+                "Normalization",
+                "Indexing",
+                "Transaction Management",
+                "ACID Properties",
+            ],
+            Calculus: [
+                "Limits and Continuity",
+                "Derivatives",
+                "Integration",
+                "Applications of Derivatives",
+                "Series and Sequences",
+                "Multivariable Calculus",
+            ],
+            Chemistry: [
+                "Atomic Structure",
+                "Chemical Bonding",
+                "Reaction Kinetics",
+                "Thermodynamics",
+                "Organic Chemistry",
+                "Electrochemistry",
+            ],
+            Physics: [
+                "Mechanics",
+                "Thermodynamics",
+                "Electromagnetism",
+                "Optics",
+                "Modern Physics",
+                "Wave Motion",
+            ],
+        };
+        return (subtopicMap[topic] || [
+            "Fundamental Concepts",
+            "Core Principles",
+            "Advanced Topics",
+            "Practical Applications",
+        ]);
+    }
+    distributeTopicsAcrossWeekdays(topics) {
+        const distribution = [];
+        // Initialize 5 weekdays only
+        for (let i = 0; i < 5; i++) {
+            distribution[i] = [];
+        }
+        // Distribute topics across weekdays only
+        topics.forEach((topic, index) => {
+            // Spread topics across different weekdays
+            const dayIndex = index % 5;
+            distribution[dayIndex].push(topic);
+        });
+        // Ensure each weekday has at least one topic if possible
+        for (let day = 0; day < 5; day++) {
+            if (distribution[day].length === 0 && topics.length > 0) {
+                // Find a topic that appears less frequently
+                const topicFrequency = new Map();
+                distribution.forEach((dayTopics) => {
+                    dayTopics.forEach((topic) => {
+                        topicFrequency.set(topic, (topicFrequency.get(topic) || 0) + 1);
+                    });
+                });
+                const leastFrequentTopic = topics.reduce((least, current) => {
+                    const leastFreq = topicFrequency.get(least) || 0;
+                    const currentFreq = topicFrequency.get(current) || 0;
+                    return currentFreq < leastFreq ? current : least;
+                });
+                distribution[day].push(leastFrequentTopic);
+            }
+        }
+        return distribution;
     }
     // Replace existing generateFlashcards with this version
     async generateFlashcards(topic, count = 5) {
@@ -224,8 +471,24 @@ Please respond with:
             return this.getFallbackFlashcards(topic, count);
         }
         const prompt = `Generate ${count} educational flashcards about ${topic}.
-Format each as: "Question: [question] Answer: [answer]"
-Make them progressively harder, covering fundamentals to advanced concepts.`;
+Format each flashcard exactly like this:
+
+**Flashcard 1**
+Question: [Your question here]
+Answer: [Your answer here]
+
+**Flashcard 2**
+Question: [Your question here]
+Answer: [Your answer here]
+
+If the answer contains code, use proper markdown code blocks like this:
+\`\`\`javascript
+console.log("Hello World");
+\`\`\`
+
+Make them progressively harder, covering fundamentals to advanced concepts.
+
+Separate each flashcard with --- on its own line.`;
         try {
             const model = this.genAI.getGenerativeModel({ model: this.modelId });
             const result = await model.generateContent(prompt);
@@ -241,37 +504,84 @@ Make them progressively harder, covering fundamentals to advanced concepts.`;
     parseFlashcardsFromAI(aiText, topic, count) {
         console.log("--- Raw AI Response ---\n", aiText, "\n-------------------------");
         const flashcards = [];
-        const lines = aiText.split("\n");
-        let currentQuestion = "";
-        let currentAnswer = "";
-        for (const line of lines) {
-            const qMatch = line.match(/question:(.*)/i);
-            const aMatch = line.match(/answer:(.*)/i);
-            if (qMatch) {
-                if (currentQuestion && currentAnswer) {
-                    flashcards.push({
-                        id: flashcards.length + 1,
-                        question: currentQuestion.trim(),
-                        answer: currentAnswer.trim(),
-                        topic: topic,
-                    });
-                    if (flashcards.length >= count)
-                        break;
+        // Split by flashcard sections (looking for --- separators)
+        const flashcardSections = aiText.split(/---/);
+        for (let i = 1; i < flashcardSections.length && flashcards.length < count; i++) {
+            const section = flashcardSections[i];
+            const lines = section.split("\n");
+            let question = "";
+            let answer = "";
+            let inAnswer = false;
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                // Look for Question: pattern
+                if (trimmedLine.toLowerCase().startsWith("question:")) {
+                    question = trimmedLine.substring("question:".length).trim();
+                    inAnswer = false;
                 }
-                currentQuestion = qMatch[1].trim();
-                currentAnswer = "";
+                // Look for Answer: pattern
+                else if (trimmedLine.toLowerCase().startsWith("answer:")) {
+                    answer = trimmedLine.substring("answer:".length).trim();
+                    inAnswer = true;
+                }
+                // If we're in answer mode and line is not empty, append to answer
+                else if (inAnswer && trimmedLine.length > 0) {
+                    answer += "\n" + trimmedLine;
+                }
+                // If we have a question but no answer yet, and line starts with code block
+                else if (question && !answer && trimmedLine.startsWith("```")) {
+                    answer = trimmedLine;
+                    inAnswer = true;
+                }
+                // If we're in answer mode and line is a code block continuation
+                else if (inAnswer &&
+                    (trimmedLine.startsWith("```") || trimmedLine.length > 0)) {
+                    answer += "\n" + trimmedLine;
+                }
             }
-            else if (aMatch) {
-                currentAnswer = aMatch[1].trim();
+            if (question && answer) {
+                flashcards.push({
+                    id: flashcards.length + 1,
+                    question: question.trim(),
+                    answer: answer.trim(),
+                    topic: topic,
+                });
             }
         }
-        if (currentQuestion && currentAnswer && flashcards.length < count) {
-            flashcards.push({
-                id: flashcards.length + 1,
-                question: currentQuestion.trim(),
-                answer: currentAnswer.trim(),
-                topic: topic,
-            });
+        // If the above parsing didn't work, try the original simple parsing
+        if (flashcards.length === 0) {
+            const lines = aiText.split("\n");
+            let currentQuestion = "";
+            let currentAnswer = "";
+            for (const line of lines) {
+                const qMatch = line.match(/question:(.*)/i);
+                const aMatch = line.match(/answer:(.*)/i);
+                if (qMatch) {
+                    if (currentQuestion && currentAnswer) {
+                        flashcards.push({
+                            id: flashcards.length + 1,
+                            question: currentQuestion.trim(),
+                            answer: currentAnswer.trim(),
+                            topic: topic,
+                        });
+                        if (flashcards.length >= count)
+                            break;
+                    }
+                    currentQuestion = qMatch[1].trim();
+                    currentAnswer = "";
+                }
+                else if (aMatch) {
+                    currentAnswer = aMatch[1].trim();
+                }
+            }
+            if (currentQuestion && currentAnswer && flashcards.length < count) {
+                flashcards.push({
+                    id: flashcards.length + 1,
+                    question: currentQuestion.trim(),
+                    answer: currentAnswer.trim(),
+                    topic: topic,
+                });
+            }
         }
         if (flashcards.length === 0) {
             console.log("Parsing AI response failed to produce flashcards. Falling back.");
@@ -307,7 +617,10 @@ Make them progressively harder, covering fundamentals to advanced concepts.`;
                     question: "What is factoring?",
                     answer: "Breaking down a polynomial into simpler factors",
                 },
-                { question: "What is the slope-intercept form?", answer: "y = mx + b" },
+                {
+                    question: "What is the slope-intercept form?",
+                    answer: "y = mx + b",
+                },
                 {
                     question: "How do you find the slope between two points?",
                     answer: "m = (y₂ - y₁) / (x₂ - x₁)",
@@ -333,7 +646,10 @@ Make them progressively harder, covering fundamentals to advanced concepts.`;
                 { question: "What is the formula for force?", answer: "F = ma" },
             ],
             chemistry: [
-                { question: "What is the chemical symbol for water?", answer: "H₂O" },
+                {
+                    question: "What is the chemical symbol for water?",
+                    answer: "H₂O",
+                },
                 { question: "What is the atomic number of carbon?", answer: "6" },
                 {
                     question: "What is a molecule?",

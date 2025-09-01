@@ -1,195 +1,410 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.app = void 0;
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const uuid_1 = require("uuid");
-const dotenv = __importStar(require("dotenv"));
 const ai_service_1 = require("./ai.service");
 const redis_service_1 = require("./redis.service");
-dotenv.config();
-exports.app = (0, express_1.default)();
+const payment_service_1 = require("./payment.service");
+// M-Pesa Configuration
+const MPESA_CONSUMER_KEY = process.env.MPESA_CONSUMER_KEY || "";
+const MPESA_CONSUMER_SECRET = process.env.MPESA_CONSUMER_SECRET || "";
+const MPESA_PASSKEY = process.env.MPESA_PASSKEY || "";
+const MPESA_BUSINESS_SHORTCODE = process.env.MPESA_BUSINESS_SHORTCODE || "";
+const app = (0, express_1.default)();
 const port = process.env.PORT || 3001;
 // Initialize services
 const aiService = new ai_service_1.AIService();
 const redisService = new redis_service_1.RedisService();
-exports.app.use((0, cors_1.default)());
-exports.app.use(express_1.default.json());
+// Middleware for parsing webhook requests
+app.use("/api/v1/payment/webhook", express_1.default.raw({ type: "application/json" }));
+app.use((0, cors_1.default)());
+app.use(express_1.default.json());
 // Health check
-exports.app.get('/api/v1/status', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get("/api/v1/status", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
-// Ask question endpoint
-exports.app.post('/api/v1/ask', async (req, res) => {
+// Ask question endpoint - now with AI
+app.post("/api/v1/ask", async (req, res) => {
     try {
-        const { sessionId, userId, text, mode = 'explain' } = req.body;
+        const { sessionId, userId, text, mode = "explain" } = req.body;
         if (!text) {
-            return res.status(400).json({ error: 'Question is required.' });
+            return res.status(400).json({ error: "Question is required." });
         }
-        // Generate response using free AI model
+        // Generate AI response
         const response = await aiService.generateResponse(text, mode);
         // Store conversation in Redis
         if (sessionId && userId) {
-            await redisService.storeMessage(sessionId, userId, 'user', text);
-            await redisService.storeMessage(sessionId, userId, 'assistant', response.answer);
+            await redisService.storeMessage(sessionId, userId, "user", text);
+            await redisService.storeMessage(sessionId, userId, "assistant", response.answer);
         }
         res.json({
             success: true,
             responseId: (0, uuid_1.v4)(),
-            ...response
+            ...response,
         });
     }
     catch (error) {
-        console.error('Error in /api/v1/ask:', error);
+        console.error("Error in /api/v1/ask:", error);
         res.status(500).json({
             success: false,
-            error: 'Failed to generate response. Please try again.'
+            error: "Failed to generate response. Please try again.",
         });
     }
 });
 // Quiz endpoints
-exports.app.post('/api/v1/quiz/start', async (req, res) => {
+app.post("/api/v1/quiz/start", async (req, res) => {
     try {
         const { userId, topics = [], count = 5 } = req.body;
         if (!userId) {
-            return res.status(400).json({ error: 'User ID is required.' });
+            return res.status(400).json({ error: "User ID is required." });
         }
         const quiz = await aiService.generateQuiz(topics, count);
         res.json({
             success: true,
             quizId: (0, uuid_1.v4)(),
-            quiz
+            quiz,
         });
     }
     catch (error) {
-        console.error('Error in /api/v1/quiz/start:', error);
+        console.error("Error in /api/v1/quiz/start:", error);
         res.status(500).json({
             success: false,
-            error: 'Failed to generate quiz. Please try again.'
+            error: "Failed to generate quiz. Please try again.",
         });
     }
 });
-exports.app.post('/api/v1/quiz/answer', async (req, res) => {
+app.post("/api/v1/quiz/answer", async (req, res) => {
     try {
         const { quizId, questionId, userAnswer } = req.body;
         if (!userAnswer) {
-            return res.status(400).json({ error: 'Answer is required.' });
+            return res.status(400).json({ error: "Answer is required." });
         }
         const result = await aiService.gradeAnswer(questionId, userAnswer);
         res.json({
             success: true,
-            ...result
+            ...result,
         });
     }
     catch (error) {
-        console.error('Error in /api/v1/quiz/answer:', error);
+        console.error("Error in /api/v1/quiz/answer:", error);
         res.status(500).json({
             success: false,
-            error: 'Failed to grade answer. Please try again.'
+            error: "Failed to grade answer. Please try again.",
         });
     }
 });
-// Study plan generation
-exports.app.post('/api/v1/plan/generate', async (req, res) => {
+// Enhanced Study plan generation with AI
+app.post("/api/v1/plan/generate", async (req, res) => {
     try {
-        const { userId, timeframeDays = 7 } = req.body;
+        const { userId, dailyHours, weakTopics = [], preferredTimeSlots = [], } = req.body;
         if (!userId) {
-            return res.status(400).json({ error: 'User ID is required.' });
+            return res.status(400).json({ error: "User ID is required." });
         }
-        const plan = await aiService.generateStudyPlan(userId, timeframeDays);
+        if (preferredTimeSlots.length === 0) {
+            return res
+                .status(400)
+                .json({ error: "At least one preferred time slot is required." });
+        }
+        if (!dailyHours || dailyHours < 2) {
+            return res
+                .status(400)
+                .json({ error: "Daily study hours must be at least 2." });
+        }
+        if (weakTopics.length === 0) {
+            return res
+                .status(400)
+                .json({ error: "At least one weak topic is required." });
+        }
+        const plan = await aiService.generateStudyPlan(userId, dailyHours, weakTopics, preferredTimeSlots);
+        // Save the plan to Redis
+        const planKey = `study_plan:${userId}:current`;
+        await redisService.storeStudyPlan(planKey, plan);
         res.json({
             success: true,
-            plan
+            plan,
         });
     }
     catch (error) {
-        console.error('Error in /api/v1/plan/generate:', error);
+        console.error("Error in /api/v1/plan/generate:", error);
         res.status(500).json({
             success: false,
-            error: 'Failed to generate study plan. Please try again.'
+            error: "Failed to generate study plan. Please try again.",
+        });
+    }
+});
+// Get current study plan
+app.get("/api/v1/plan/current/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!userId) {
+            return res.status(400).json({ error: "User ID is required." });
+        }
+        const planKey = `study_plan:${userId}:current`;
+        const plan = await redisService.getStudyPlan(planKey);
+        if (!plan) {
+            return res.status(404).json({
+                success: false,
+                error: "No active study plan found.",
+            });
+        }
+        // Check if plan is still valid (within the same week)
+        const planDate = new Date(plan.createdAt);
+        const currentDate = new Date();
+        const weekStart = new Date(currentDate);
+        weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Monday
+        weekStart.setHours(0, 0, 0, 0);
+        const planWeekStart = new Date(planDate);
+        planWeekStart.setDate(planDate.getDate() - planDate.getDay() + 1); // Monday
+        planWeekStart.setHours(0, 0, 0, 0);
+        if (planWeekStart.getTime() !== weekStart.getTime()) {
+            // Plan is from a different week, delete it
+            await redisService.deleteStudyPlan(planKey);
+            return res.status(404).json({
+                success: false,
+                error: "Study plan has expired. Please generate a new one.",
+            });
+        }
+        res.json({
+            success: true,
+            plan,
+        });
+    }
+    catch (error) {
+        console.error("Error in /api/v1/plan/current:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to retrieve study plan. Please try again.",
+        });
+    }
+});
+// Delete current study plan
+app.delete("/api/v1/plan/current/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!userId) {
+            return res.status(400).json({ error: "User ID is required." });
+        }
+        const planKey = `study_plan:${userId}:current`;
+        await redisService.deleteStudyPlan(planKey);
+        res.json({
+            success: true,
+            message: "Study plan deleted successfully.",
+        });
+    }
+    catch (error) {
+        console.error("Error in /api/v1/plan/delete:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to delete study plan. Please try again.",
+        });
+    }
+});
+// Update study plan progress
+app.post("/api/v1/plan/progress", async (req, res) => {
+    try {
+        const { userId, planId, taskId, completed } = req.body;
+        if (!userId || !planId || !taskId) {
+            return res
+                .status(400)
+                .json({ error: "User ID, Plan ID, and Task ID are required." });
+        }
+        // Store progress in Redis
+        const progressKey = `study_plan:${planId}:${userId}`;
+        const progressData = {
+            taskId,
+            completed,
+            timestamp: new Date().toISOString(),
+        };
+        await redisService.storeProgress(progressKey, progressData);
+        // Update the main study plan with progress
+        const planKey = `study_plan:${userId}:current`;
+        const plan = await redisService.getStudyPlan(planKey);
+        if (plan) {
+            const updatedTasks = plan.tasks.map((task) => {
+                if (task.id === taskId) {
+                    return { ...task, completed };
+                }
+                return task;
+            });
+            const completedTasks = updatedTasks
+                .filter((task) => task.completed)
+                .map((task) => task.id);
+            const weeklyProgress = Math.round((completedTasks.length / updatedTasks.length) * 100);
+            const updatedPlan = {
+                ...plan,
+                tasks: updatedTasks,
+                completedTasks,
+                weeklyProgress,
+            };
+            await redisService.storeStudyPlan(planKey, updatedPlan);
+        }
+        res.json({
+            success: true,
+            message: "Progress updated successfully",
+        });
+    }
+    catch (error) {
+        console.error("Error in /api/v1/plan/progress:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to update progress. Please try again.",
         });
     }
 });
 // Flashcard generation
-exports.app.post('/api/v1/flashcards/generate', async (req, res) => {
+app.post("/api/v1/flashcards/generate", async (req, res) => {
     try {
         const { topic, count = 5 } = req.body;
         if (!topic) {
-            return res.status(400).json({ error: 'Topic is required.' });
+            return res.status(400).json({ error: "Topic is required." });
         }
         const flashcards = await aiService.generateFlashcards(topic, count);
         res.json({
             success: true,
             flashcards,
             topic,
-            count: flashcards.length
+            count: flashcards.length,
         });
     }
     catch (error) {
-        console.error('Error in /api/v1/flashcards/generate:', error);
+        console.error("Error in /api/v1/flashcards/generate:", error);
         res.status(500).json({
             success: false,
-            error: 'Failed to generate flashcards. Please try again.'
+            error: "Failed to generate flashcards. Please try again.",
         });
     }
 });
 // User feedback
-exports.app.post('/api/v1/answer/feedback', async (req, res) => {
+app.post("/api/v1/answer/feedback", async (req, res) => {
     try {
         const { responseId, userId, isPositive, feedback } = req.body;
         if (!responseId || !userId) {
-            return res.status(400).json({ error: 'Response ID and User ID are required.' });
+            return res
+                .status(400)
+                .json({ error: "Response ID and User ID are required." });
         }
         await redisService.storeFeedback(responseId, userId, isPositive, feedback);
-        res.json({ success: true, message: 'Feedback recorded successfully.' });
+        res.json({ success: true, message: "Feedback recorded successfully." });
     }
     catch (error) {
-        console.error('Error in /api/v1/answer/feedback:', error);
+        console.error("Error in /api/v1/answer/feedback:", error);
         res.status(500).json({
             success: false,
-            error: 'Failed to record feedback. Please try again.'
+            error: "Failed to record feedback. Please try again.",
         });
     }
 });
+// M-Pesa Payment endpoints
+app.post("/api/v1/payment/initiate-mpesa", async (req, res) => {
+    try {
+        const { plan, phoneNumber, userId } = req.body;
+        if (!plan || !phoneNumber) {
+            return res
+                .status(400)
+                .json({ error: "Plan and phone number are required" });
+        }
+        const reference = `AI_STUDY_${Date.now()}`;
+        const paymentRequest = {
+            phoneNumber: phoneNumber,
+            amount: plan.price,
+            planId: plan.id,
+            userId: userId,
+            reference: reference,
+        };
+        const result = await payment_service_1.paymentService.initiateMpesaPayment(paymentRequest);
+        if (result.success) {
+            res.json({
+                success: true,
+                checkoutRequestID: result.checkoutRequestID,
+                customerMessage: result.customerMessage,
+            });
+        }
+        else {
+            res.status(400).json({
+                success: false,
+                error: result.error,
+            });
+        }
+    }
+    catch (error) {
+        console.error("Error initiating M-Pesa payment:", error);
+        res.status(500).json({ error: "Failed to initiate payment" });
+    }
+});
+app.post("/api/v1/payment/mpesa-callback", async (req, res) => {
+    try {
+        console.log("M-Pesa callback received:", req.body);
+        const success = await payment_service_1.paymentService.handleMpesaCallback(req.body);
+        if (success) {
+            res.json({ success: true, message: "Payment processed successfully" });
+        }
+        else {
+            res.status(400).json({ success: false, message: "Payment failed" });
+        }
+    }
+    catch (error) {
+        console.error("Error processing M-Pesa callback:", error);
+        res
+            .status(500)
+            .json({ success: false, message: "Internal server error" });
+    }
+});
+app.get("/api/v1/payment/subscription/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const subscription = await payment_service_1.paymentService.getUserSubscription(userId);
+        const hasActiveSubscription = await payment_service_1.paymentService.hasActiveSubscription(userId);
+        res.json({
+            success: true,
+            subscription,
+            hasActiveSubscription,
+        });
+    }
+    catch (error) {
+        console.error("Error in /api/v1/payment/subscription:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to get subscription status. Please try again.",
+        });
+    }
+});
+app.post("/api/v1/payment/cancel/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const success = await payment_service_1.paymentService.cancelSubscription(userId);
+        if (success) {
+            res.json({
+                success: true,
+                message: "Subscription cancelled successfully",
+            });
+        }
+        else {
+            res.status(400).json({ error: "Failed to cancel subscription" });
+        }
+    }
+    catch (error) {
+        console.error("Error in /api/v1/payment/cancel:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to cancel subscription. Please try again.",
+        });
+    }
+});
+// Health check endpoint
+app.get("/api/v1/status", (req, res) => {
+    res.json({
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "development",
+    });
+});
 // Start server
-if (process.env.NODE_ENV !== 'test') {
-    exports.app.listen(port, () => {
+if (process.env.NODE_ENV !== "test") {
+    app.listen(port, () => {
         console.log(`AI Study Buddy backend running on http://localhost:${port}`);
     });
 }
