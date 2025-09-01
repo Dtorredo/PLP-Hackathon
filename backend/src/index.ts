@@ -20,6 +20,37 @@ const requireService = (service: any, serviceName: string) => {
   }
 };
 
+// Wrapper functions for endpoints to handle null services
+const withAIService = (handler: (aiService: AIService) => Promise<any>) => {
+  return async (req: Request, res: Response) => {
+    if (!aiService) {
+      return res.status(503).json({ error: "AI Service not available" });
+    }
+    try {
+      await handler(aiService);
+    } catch (error) {
+      console.error("Error in AI service handler:", error);
+      res.status(500).json({ error: "Service unavailable" });
+    }
+  };
+};
+
+const withRedisService = (
+  handler: (redisService: RedisService) => Promise<any>
+) => {
+  return async (req: Request, res: Response) => {
+    if (!redisService) {
+      return res.status(503).json({ error: "Redis Service not available" });
+    }
+    try {
+      await handler(redisService);
+    } catch (error) {
+      console.error("Error in Redis service handler:", error);
+      res.status(500).json({ error: "Service unavailable" });
+    }
+  };
+};
+
 // Initialize services with error handling
 let aiService: AIService | null = null;
 let redisService: RedisService | null = null;
@@ -131,6 +162,10 @@ app.post("/api/v1/quiz/answer", async (req: Request, res: Response) => {
 
     if (!userAnswer) {
       return res.status(400).json({ error: "Answer is required." });
+    }
+
+    if (!aiService) {
+      return res.status(503).json({ error: "AI Service not available" });
     }
 
     const result = await aiService.gradeAnswer(questionId, userAnswer);
