@@ -491,7 +491,7 @@ app.get("/api/v1/status", (req: Request, res: Response) => {
 
 // Start server
 if (process.env.NODE_ENV !== "test") {
-  app.listen(port, () => {
-    console.log(`AI Study Buddy backend running on http://localhost:${port}`);
+  app.listen(Number(port), "0.0.0.0", () => {
+    console.log(`AI Study Buddy backend running on http://0.0.0.0:${port}`);
   });
 }
