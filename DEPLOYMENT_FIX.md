@@ -1,84 +1,39 @@
-# Fly.io Deployment Fix Guide
+# Deploying the Application with Firebase Configuration
 
-## Issues Fixed
+To fix the `auth/api-key-not-valid` error, the application has been updated to require Firebase configuration at build time. You must now provide your Firebase project's environment variables as build arguments when building the Docker image.
 
-1. **Static File Path Issue**: Backend was looking for frontend files in the wrong location
-2. **Content Security Policy**: Updated CSP to allow WebSocket connections and fonts
-3. **Vite Configuration**: Added proper build configuration for production
-4. **Error Handling**: Added better error handling and debugging endpoints
+## Building the Docker Image
 
-## Deployment Steps
+To build the image for deployment, you need to pass your Firebase configuration using `--build-arg`.
 
-### 1. Build and Deploy
+Here is an example command:
 
 ```bash
-# Build the project
-pnpm run build
-
-# Deploy to Fly.io
-flyctl deploy -a plp-hackathon
+docker build . -t my-app \\
+  --build-arg VITE_FIREBASE_API_KEY="your_api_key" \\
+  --build-arg VITE_FIREBASE_AUTH_DOMAIN="your_auth_domain" \\
+  --build-arg VITE_FIREBASE_PROJECT_ID="your_project_id" \\
+  --build-arg VITE_FIREBASE_STORAGE_BUCKET="your_storage_bucket" \\
+  --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID="your_messaging_sender_id" \\
+  --build-arg VITE_FIREBASE_APP_ID="your_app_id" \\
+  --build-arg VITE_FIREBASE_MEASUREMENT_ID="your_measurement_id"
 ```
 
-### 2. Check Deployment Status
+Replace `"your_..."` with your actual Firebase project configuration values.
+
+## Deploying to Fly.io
+
+When deploying to Fly.io, you can use the same build arguments with the `flyctl deploy` command. Fly.io will pass these to the Docker build process.
 
 ```bash
-# Check app status
-flyctl status -a plp-hackathon
-
-# View logs
-flyctl logs -a plp-hackathon
+flyctl deploy \\
+  --build-arg VITE_FIREBASE_API_KEY="your_api_key" \\
+  --build-arg VITE_FIREBASE_AUTH_DOMAIN="your_auth_domain" \\
+  --build-arg VITE_FIREBASE_PROJECT_ID="your_project_id" \\
+  --build-arg VITE_FIREBASE_STORAGE_BUCKET="your_storage_bucket" \\
+  --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID="your_messaging_sender_id" \\
+  --build-arg VITE_FIREBASE_APP_ID="your_app_id" \\
+  --build-arg VITE_FIREBASE_MEASUREMENT_ID="your_measurement_id"
 ```
 
-### 3. Test the Deployment
-
-```bash
-# Test health endpoint
-curl https://plp-hackathon.fly.dev/api/v1/status
-
-# Test debug endpoint (for troubleshooting)
-curl https://plp-hackathon.fly.dev/api/v1/debug/static
-
-# Test frontend
-curl https://plp-hackathon.fly.dev/
-```
-
-## Troubleshooting
-
-### If you still see a black page:
-
-1. **Check the logs**:
-   ```bash
-   flyctl logs -a plp-hackathon
-   ```
-
-2. **Check the debug endpoint**:
-   ```bash
-   curl https://plp-hackathon.fly.dev/api/v1/debug/static
-   ```
-
-3. **Verify environment variables**:
-   ```bash
-   flyctl secrets list -a plp-hackathon
-   ```
-
-### Common Issues:
-
-- **Missing environment variables**: Ensure all required secrets are set
-- **Build failures**: Check that the build process completes successfully
-- **Port issues**: Ensure the app is listening on port 3001 (as configured in fly.toml)
-
-## Local Testing
-
-To test the deployment locally before pushing to Fly.io:
-
-```bash
-# Setup development environment
-pnpm run setup:dev
-
-# Start the server
-pnpm run start:dev
-
-# Test locally
-curl http://localhost:3001/
-curl http://localhost:3001/api/v1/status
-```
+**Important:** It is recommended to use secrets management for these values rather than passing them directly on the command line, especially in a CI/CD environment. For Fly.io, you can set these as secrets and then use them in your deployment process. However, for the build process to access them, you must use build arguments as shown above.
