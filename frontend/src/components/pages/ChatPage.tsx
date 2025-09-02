@@ -661,3 +661,4 @@ export function ChatPage({ user }: ChatPageProps) {
     </div>
   );
 }
+
