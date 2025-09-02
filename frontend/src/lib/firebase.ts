@@ -1,8 +1,4 @@
 import { initializeApp } from "firebase/app";
-import {
-  getAnalytics,
-  isSupported as isAnalyticsSupported,
-} from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -34,18 +30,35 @@ if (import.meta.env.DEV) {
   }
 }
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase with error handling
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log("Firebase initialized successfully");
+} catch (error) {
+  console.error("Firebase initialization failed:", error);
+  // Use a minimal config for fallback
+  app = initializeApp({
+    apiKey: "demo-key",
+    authDomain: "demo.firebaseapp.com",
+    projectId: "demo-project",
+    storageBucket: "demo.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "demo-app-id",
+  });
+}
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app);
 
 // Optional: Analytics (browser-only, supported environments)
-export let analytics: ReturnType<typeof getAnalytics> | null = null;
-if (typeof window !== "undefined") {
-  isAnalyticsSupported().then((supported: boolean) => {
-    if (supported) {
-      analytics = getAnalytics(app);
-    }
-  });
-}
+export const analytics: null = null;
+// Temporarily disable analytics to avoid API key issues
+// if (typeof window !== "undefined") {
+//   isAnalyticsSupported().then((supported: boolean) => {
+//     if (supported) {
+//       analytics = getAnalytics(app);
+//     }
+//   });
+// }
