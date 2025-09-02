@@ -1,15 +1,47 @@
 import { User, Trophy, TrendingUp, Target, Award } from "lucide-react";
 import type { User as UserType } from "../../lib/types";
 import { formatDate } from "../../lib/utils";
+import { useTheme } from "../../lib/theme.tsx";
 
 interface ProfilePageProps {
   user: UserType;
 }
 
 export function ProfilePage({ user }: ProfilePageProps) {
+  const { theme } = useTheme();
+
   const getBadges = () => {
     return user.achievements || [];
   };
+
+  // Theme-aware classes
+  const getThemeClasses = () => {
+    return {
+      container:
+        theme === "light"
+          ? "bg-white rounded-lg shadow-sm border border-gray-200"
+          : "bg-secondary-800 rounded-lg shadow-lg border border-secondary-700",
+      text: theme === "light" ? "text-gray-900" : "text-white",
+      textSecondary: theme === "light" ? "text-gray-600" : "text-gray-300",
+      textTertiary: theme === "light" ? "text-gray-500" : "text-gray-400",
+      card:
+        theme === "light"
+          ? "bg-gray-50 border border-gray-200"
+          : "bg-secondary-800 border border-secondary-700",
+      specialCard:
+        theme === "light"
+          ? "bg-purple-50 border border-purple-200"
+          : "bg-secondary-650 border-secondary-700",
+      iconBg: theme === "light" ? "bg-purple-100" : "bg-primary-900",
+      iconColor: theme === "light" ? "text-purple-600" : "text-primary-400",
+      greenIconBg: theme === "light" ? "bg-green-100" : "bg-green-900",
+      greenIconColor: theme === "light" ? "text-green-600" : "text-green-400",
+      targetIconBg: theme === "light" ? "bg-gray-100" : "bg-secondary-650",
+      targetIconColor: theme === "light" ? "text-gray-600" : "text-white",
+    };
+  };
+
+  const themeClasses = getThemeClasses();
 
   // Ensure user has valid dates
   const userCreatedAt =
@@ -22,15 +54,21 @@ export function ProfilePage({ user }: ProfilePageProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Profile Header */}
-      <div className="card">
+      <div className={`${themeClasses.container} p-6`}>
         <div className="flex items-center gap-6">
-          <div className="w-20 h-20 bg-primary-900 rounded-full flex items-center justify-center">
-            <User className="w-10 h-10 text-primary-400" />
+          <div
+            className={`w-20 h-20 ${themeClasses.iconBg} rounded-full flex items-center justify-center`}
+          >
+            <User className={`w-10 h-10 ${themeClasses.iconColor}`} />
           </div>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-white mb-2">{user.name}</h1>
-            <p className="text-gray-300 mb-3">{user.email}</p>
-            <div className="flex items-center gap-6 text-sm text-gray-300">
+            <h1 className={`text-3xl font-bold ${themeClasses.text} mb-2`}>
+              {user.name}
+            </h1>
+            <p className={`${themeClasses.textSecondary} mb-3`}>{user.email}</p>
+            <div
+              className={`flex items-center gap-6 text-sm ${themeClasses.textSecondary}`}
+            >
               <span>Member since {formatDate(userCreatedAt)}</span>
               <span>Last active {formatDate(userLastActive)}</span>
             </div>
@@ -40,46 +78,58 @@ export function ProfilePage({ user }: ProfilePageProps) {
 
       {/* Stats Overview */}
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="card text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-900 rounded-full mb-4">
-            <Trophy className="w-6 h-6 text-primary-400" />
+        <div className={`${themeClasses.card} p-6 text-center`}>
+          <div
+            className={`inline-flex items-center justify-center w-12 h-12 ${themeClasses.iconBg} rounded-full mb-4`}
+          >
+            <Trophy className={`w-6 h-6 ${themeClasses.iconColor}`} />
           </div>
-          <div className="text-3xl font-bold text-primary-400 mb-1">
+          <div className={`text-3xl font-bold ${themeClasses.iconColor} mb-1`}>
             {user.points}
           </div>
-          <div className="text-gray-300">Total Points</div>
+          <div className={themeClasses.textSecondary}>Total Points</div>
         </div>
 
-        <div className="card text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-green-900 rounded-full mb-4">
-            <TrendingUp className="w-6 h-6 text-green-400" />
+        <div className={`${themeClasses.card} p-6 text-center`}>
+          <div
+            className={`inline-flex items-center justify-center w-12 h-12 ${themeClasses.greenIconBg} rounded-full mb-4`}
+          >
+            <TrendingUp className={`w-6 h-6 ${themeClasses.greenIconColor}`} />
           </div>
-          <div className="text-3xl font-bold text-green-400 mb-1">
+          <div
+            className={`text-3xl font-bold ${themeClasses.greenIconColor} mb-1`}
+          >
             {user.streak}
           </div>
-          <div className="text-gray-300">Day Streak</div>
+          <div className={themeClasses.textSecondary}>Day Streak</div>
         </div>
 
-        <div className="card text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-secondary-650 rounded-full mb-4">
-            <Target className="w-6 h-6 text-white" />
+        <div className={`${themeClasses.card} p-6 text-center`}>
+          <div
+            className={`inline-flex items-center justify-center w-12 h-12 ${themeClasses.targetIconBg} rounded-full mb-4`}
+          >
+            <Target className={`w-6 h-6 ${themeClasses.targetIconColor}`} />
           </div>
-          <div className="text-3xl font-bold text-white mb-1">
+          <div
+            className={`text-3xl font-bold ${themeClasses.targetIconColor} mb-1`}
+          >
             {Object.keys(user.topics).length}
           </div>
-          <div className="text-gray-300">Subjects</div>
+          <div className={themeClasses.textSecondary}>Subjects</div>
         </div>
       </div>
 
       {/* Badges */}
-      <div className="card">
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <Award className="w-5 h-5 text-primary-500" />
+      <div className={`${themeClasses.container} p-6`}>
+        <h2
+          className={`text-xl font-bold ${themeClasses.text} mb-6 flex items-center gap-2`}
+        >
+          <Award className="w-5 h-5 text-purple-600" />
           Achievements & Badges
         </h2>
 
         {getBadges().length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className={`text-center py-8 ${themeClasses.textTertiary}`}>
             <Award className="w-12 h-12 mx-auto mb-3 text-gray-600" />
             <p>No badges earned yet. Keep studying to unlock achievements!</p>
           </div>
@@ -88,12 +138,16 @@ export function ProfilePage({ user }: ProfilePageProps) {
             {getBadges().map((badge) => (
               <div
                 key={badge.id}
-                className="border border-secondary-700 rounded-lg p-4 text-center"
+                className={`${themeClasses.card} rounded-lg p-4 text-center`}
               >
                 <div className="text-4xl mb-2">{badge.icon}</div>
-                <h3 className="font-semibold text-white mb-1">{badge.name}</h3>
-                <p className="text-sm text-gray-400">{badge.description}</p>
-                <p className="text-xs text-gray-500 mt-2">
+                <h3 className={`font-semibold ${themeClasses.text} mb-1`}>
+                  {badge.name}
+                </h3>
+                <p className={`text-sm ${themeClasses.textSecondary}`}>
+                  {badge.description}
+                </p>
+                <p className={`text-xs ${themeClasses.textTertiary} mt-2`}>
                   Earned {formatDate(badge.earnedAt)}
                 </p>
               </div>
@@ -103,9 +157,11 @@ export function ProfilePage({ user }: ProfilePageProps) {
       </div>
 
       {/* Study Tips */}
-      <div className="card bg-secondary-650 border-secondary-700">
-        <h3 className="font-semibold text-white mb-3">💡 Study Tips</h3>
-        <ul className="text-gray-300 text-sm space-y-2">
+      <div className={`${themeClasses.specialCard} p-6`}>
+        <h3 className={`font-semibold ${themeClasses.text} mb-3`}>
+          💡 Study Tips
+        </h3>
+        <ul className={`${themeClasses.textSecondary} text-sm space-y-2`}>
           <li>• Study consistently to maintain your streak</li>
           <li>• Focus on topics where your strength is below 70%</li>
           <li>• Take quizzes regularly to track progress</li>

@@ -13,17 +13,66 @@ import {
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useTheme } from "../../lib/theme.tsx";
 
 interface ChatPageProps {
   user: User;
 }
 
 export function ChatPage({ user }: ChatPageProps) {
+  const { theme } = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Theme-aware classes
+  const getThemeClasses = () => {
+    return {
+      container:
+        theme === "light"
+          ? "bg-white rounded-lg shadow-sm border border-gray-200"
+          : "bg-secondary-800 rounded-lg shadow-lg border border-secondary-700",
+      text: theme === "light" ? "text-gray-900" : "text-white",
+      textSecondary: theme === "light" ? "text-gray-600" : "text-gray-300",
+      input:
+        theme === "light"
+          ? "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          : "bg-secondary-800 border border-secondary-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500",
+      button:
+        theme === "light"
+          ? "bg-purple-600 hover:bg-purple-700 text-white"
+          : "bg-primary-600 hover:bg-primary-700 text-white",
+      messagesContainer:
+        theme === "light"
+          ? "bg-gray-50 border border-gray-200"
+          : "bg-secondary-900 border border-secondary-700",
+      userMessage:
+        theme === "light"
+          ? "bg-purple-600 text-white"
+          : "bg-primary-600 text-white",
+      aiMessage:
+        theme === "light"
+          ? "bg-white border border-gray-200 text-gray-900"
+          : "bg-secondary-800 text-white",
+      codeBlock:
+        theme === "light"
+          ? "bg-gray-100 border border-gray-200"
+          : "bg-secondary-900 border border-secondary-700",
+      inlineCode:
+        theme === "light"
+          ? "bg-gray-100 px-1 py-0.5 rounded text-sm"
+          : "bg-secondary-700 px-1 py-0.5 rounded text-sm",
+      heading: theme === "light" ? "text-gray-900" : "text-white",
+      paragraph: theme === "light" ? "text-gray-700" : "text-gray-300",
+      listItem: theme === "light" ? "text-gray-700" : "text-gray-300",
+      strong: theme === "light" ? "text-gray-900" : "text-white",
+      emphasis: theme === "light" ? "text-gray-600" : "text-gray-300",
+    };
+  };
+
+  const themeClasses = getThemeClasses();
 
   // Initialize chat with welcome message
   useEffect(() => {
@@ -145,12 +194,14 @@ export function ChatPage({ user }: ChatPageProps) {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="card mb-6">
-        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-          <MessageCircle className="w-6 h-6 text-primary-500" />
+      <div className={`${themeClasses.container} p-6 mb-6`}>
+        <h2
+          className={`text-2xl font-bold ${themeClasses.text} mb-4 flex items-center gap-2`}
+        >
+          <MessageCircle className="w-6 h-6 text-purple-600" />
           Ask & Learn
         </h2>
-        <p className="text-gray-300">
+        <p className={themeClasses.textSecondary}>
           Ask me anything about your subjects. I'll provide detailed
           explanations with sources and practice questions.
         </p>
@@ -164,20 +215,22 @@ export function ChatPage({ user }: ChatPageProps) {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
           placeholder="Ask me anything about your subjects..."
-          className="input-field flex-1"
+          className={`${themeClasses.input} flex-1 px-4 py-2 rounded-lg focus:outline-none`}
           disabled={isLoading}
         />
         <button
           onClick={handleSendMessage}
           disabled={!inputValue.trim() || isLoading}
-          className="btn-primary"
+          className={`${themeClasses.button} px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
         >
           <Send className="w-4 h-4" />
         </button>
       </div>
 
       {/* Messages Container - Scrollable below input */}
-      <div className="bg-secondary-900 rounded-lg border border-secondary-700 p-4 min-h-96 max-h-[600px] overflow-y-auto">
+      <div
+        className={`${themeClasses.messagesContainer} rounded-lg p-4 min-h-96 max-h-[600px] overflow-y-auto`}
+      >
         <div className="space-y-4">
           <AnimatePresence>
             {messages.map((message) => (
@@ -192,8 +245,8 @@ export function ChatPage({ user }: ChatPageProps) {
                 <div
                   className={`max-w-3xl rounded-lg p-4 ${
                     message.role === "user"
-                      ? "bg-primary-600 text-white"
-                      : "bg-secondary-800 text-white"
+                      ? themeClasses.userMessage
+                      : themeClasses.aiMessage
                   }`}
                 >
                   <div className="prose prose-invert max-w-none">
@@ -209,14 +262,16 @@ export function ChatPage({ user }: ChatPageProps) {
                           ...props
                         }: any) => {
                           return !inline ? (
-                            <pre className="bg-secondary-900 p-3 rounded-lg overflow-x-auto">
+                            <pre
+                              className={`${themeClasses.codeBlock} p-3 rounded-lg overflow-x-auto`}
+                            >
                               <code className={className} {...props}>
                                 {children}
                               </code>
                             </pre>
                           ) : (
                             <code
-                              className="bg-secondary-700 px-1 py-0.5 rounded text-sm"
+                              className={`${themeClasses.inlineCode}`}
                               {...props}
                             >
                               {children}
@@ -225,17 +280,23 @@ export function ChatPage({ user }: ChatPageProps) {
                         },
                         // Customize headings
                         h1: ({ children }) => (
-                          <h1 className="text-2xl font-bold text-white mb-4">
+                          <h1
+                            className={`text-2xl font-bold ${themeClasses.heading} mb-4`}
+                          >
                             {children}
                           </h1>
                         ),
                         h2: ({ children }) => (
-                          <h2 className="text-xl font-bold text-white mb-3">
+                          <h2
+                            className={`text-xl font-bold ${themeClasses.heading} mb-3`}
+                          >
                             {children}
                           </h2>
                         ),
                         h3: ({ children }) => (
-                          <h3 className="text-lg font-bold text-white mb-2">
+                          <h3
+                            className={`text-lg font-bold ${themeClasses.heading} mb-2`}
+                          >
                             {children}
                           </h3>
                         ),
@@ -251,23 +312,29 @@ export function ChatPage({ user }: ChatPageProps) {
                           </ol>
                         ),
                         li: ({ children }) => (
-                          <li className="text-gray-300">{children}</li>
+                          <li className={themeClasses.listItem}>{children}</li>
                         ),
                         // Customize paragraphs - prevent line breaks and preserve code formatting
                         p: ({ children }) => (
-                          <p className="mb-3 text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
+                          <p
+                            className={`mb-3 ${themeClasses.paragraph} leading-relaxed whitespace-pre-wrap break-words`}
+                          >
                             {children}
                           </p>
                         ),
                         // Customize strong text
                         strong: ({ children }) => (
-                          <strong className="font-semibold text-white">
+                          <strong
+                            className={`font-semibold ${themeClasses.strong}`}
+                          >
                             {children}
                           </strong>
                         ),
                         // Customize emphasis
                         em: ({ children }) => (
-                          <em className="italic text-gray-300">{children}</em>
+                          <em className={`italic ${themeClasses.emphasis}`}>
+                            {children}
+                          </em>
                         ),
                       }}
                     >
@@ -281,7 +348,7 @@ export function ChatPage({ user }: ChatPageProps) {
 
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-secondary-800 rounded-lg p-4">
+              <div className={`${themeClasses.aiMessage} rounded-lg p-4`}>
                 <LoadingSpinner size="sm" />
               </div>
             </div>

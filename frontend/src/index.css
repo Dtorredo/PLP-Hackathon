@@ -6,35 +6,6 @@
   html {
     font-family: "Inter", system-ui, sans-serif;
   }
-
-  body {
-    @apply bg-black text-white;
-  }
-
-  /* Ensure all elements inherit dark theme */
-  * {
-    @apply border-secondary-700;
-  }
-
-  /* Override any browser default light backgrounds */
-  html,
-  body,
-  #root {
-    @apply bg-black;
-  }
-
-  /* Force dark backgrounds on all components */
-  .bg-secondary-900 {
-    background-color: #1a1a1a !important;
-  }
-
-  .bg-secondary-800 {
-    background-color: #2d2d2d !important;
-  }
-
-  .bg-secondary-700 {
-    background-color: #404040 !important;
-  }
 }
 
 @layer components {
@@ -54,21 +25,8 @@
     @apply w-full px-3 py-2 border border-secondary-600 bg-secondary-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-white;
   }
 
-  /* Force dark theme on all elements */
   .sidebar {
     @apply bg-secondary-800 border-secondary-700;
-  }
-
-  /* Override any light backgrounds */
-  [class*="bg-white"],
-  [class*="bg-gray-50"],
-  [class*="bg-gray-100"] {
-    @apply bg-secondary-800 !important;
-  }
-
-  /* Force all secondary colors to be dark */
-  [class*="bg-secondary-"] {
-    @apply bg-secondary-800 !important;
   }
 
   /* Markdown styling for chat messages */

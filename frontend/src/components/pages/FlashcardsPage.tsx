@@ -14,12 +14,14 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { useTheme } from "../../lib/theme.tsx";
 
 interface FlashcardsPageProps {
   user: User;
 }
 
 export function FlashcardsPage({ user }: FlashcardsPageProps) {
+  const { theme } = useTheme();
   const [sessionId, setSessionId] = useState<string>("");
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
@@ -32,6 +34,16 @@ export function FlashcardsPage({ user }: FlashcardsPageProps) {
   const [flashcardHistory, setFlashcardHistory] = useState<FlashcardHistory[]>(
     []
   );
+
+  // Theme-aware classes
+  const getThemeClasses = () => {
+    return {
+      text: theme === "light" ? "text-gray-900" : "text-white",
+      textSecondary: theme === "light" ? "text-gray-600" : "text-gray-300",
+    };
+  };
+
+  const themeClasses = getThemeClasses();
 
   useEffect(() => {
     setSessionId(`${user.id}-flash-${Date.now()}`);
@@ -207,10 +219,10 @@ export function FlashcardsPage({ user }: FlashcardsPageProps) {
           {/* Centered flashcard stack with floating effect */}
           <div className="flex flex-col justify-center items-center min-h-[500px]">
             <div className="mb-4 text-center">
-              <h2 className="text-lg font-semibold text-white mb-1">
+              <h2 className={`text-lg font-semibold ${themeClasses.text} mb-1`}>
                 AI-Powered Flashcards
               </h2>
-              <p className="text-sm text-gray-300">
+              <p className={`text-sm ${themeClasses.textSecondary}`}>
                 {selectedTopic
                   ? `Studying: ${selectedTopic}`
                   : "Select a topic from the sidebar to generate personalized flashcards"}

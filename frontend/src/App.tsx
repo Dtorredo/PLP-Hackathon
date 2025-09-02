@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Trophy, TrendingUp } from "lucide-react";
+import { Brain, Trophy, TrendingUp, Sun, Moon } from "lucide-react";
 import { LandingPage } from "./components/pages/LandingPage";
 import { ChatPage } from "./components/pages/ChatPage";
 import { StudyPlanPage } from "./components/pages/StudyPlanPage";
@@ -15,6 +15,7 @@ import { SignInPage } from "./components/pages/SignInPage";
 import { SubjectsPage } from "./components/pages/SubjectsPage";
 import type { AppState, User } from "./lib/types";
 import { LoadingSpinner } from "./components/ui/LoadingSpinner";
+import { ThemeProvider, useTheme } from "./lib/theme.tsx";
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
@@ -172,30 +173,105 @@ function App() {
 
   // Main application
   return (
-    <div className="min-h-screen bg-black">
-      <header className="sticky top-0 z-50 bg-black shadow-sm border-b border-secondary-700">
+    <ThemeProvider>
+      <MainApp
+        appState={appState}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        handleLogout={handleLogout}
+      />
+    </ThemeProvider>
+  );
+}
+
+export default App;
+
+function MainApp({
+  appState,
+  currentPage,
+  setCurrentPage,
+  handleLogout,
+}: {
+  appState: AppState;
+  currentPage: string;
+  setCurrentPage: (page: string) => void;
+  handleLogout: () => void;
+}) {
+  const { theme, toggleTheme } = useTheme();
+
+  // Theme-aware classes for the main app layout
+  const getAppThemeClasses = () => {
+    return {
+      background: theme === "light" ? "bg-gray-50" : "bg-black",
+      header:
+        theme === "light"
+          ? "bg-white shadow-sm border-b border-gray-200"
+          : "bg-black shadow-sm border-b border-secondary-700",
+      nav:
+        theme === "light"
+          ? "bg-white/75 backdrop-blur-md border border-gray-200"
+          : "bg-secondary-800/75 backdrop-blur-md border border-secondary-700",
+      navActive:
+        theme === "light"
+          ? "bg-purple-600 text-white shadow-sm"
+          : "bg-primary-600 text-white shadow-sm",
+      navInactive:
+        theme === "light"
+          ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+          : "text-gray-300 hover:text-white hover:bg-secondary-700",
+      text: theme === "light" ? "text-gray-900" : "text-white",
+      textSecondary: theme === "light" ? "text-gray-600" : "text-gray-300",
+      icon: theme === "light" ? "text-purple-600" : "text-primary-600",
+    };
+  };
+
+  const appThemeClasses = getAppThemeClasses();
+
+  return (
+    <div className={`min-h-screen ${appThemeClasses.background}`}>
+      <header className={`sticky top-0 z-50 ${appThemeClasses.header}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <Brain className="h-8 w-8 text-primary-600" />
-              <h1 className="text-xl font-bold text-white">AI Study Buddy</h1>
+              <Brain className={`h-8 w-8 ${appThemeClasses.icon}`} />
+              <h1 className={`text-xl font-bold ${appThemeClasses.text}`}>
+                AI Study Buddy
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Trophy className="h-5 w-5 text-yellow-500" />
-                <span className="text-sm font-medium text-gray-300">
+                <span
+                  className={`text-sm font-medium ${appThemeClasses.textSecondary}`}
+                >
                   {appState.user.points} pts
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <TrendingUp className="h-5 w-5 text-green-500" />
-                <span className="text-sm font-medium text-gray-300">
+                <span
+                  className={`text-sm font-medium ${appThemeClasses.textSecondary}`}
+                >
                   {appState.user.streak} day streak
                 </span>
               </div>
+
+              {/* Theme Toggle Button */}
+              <button
+                onClick={toggleTheme}
+                className={`p-2 ${appThemeClasses.textSecondary} hover:${appThemeClasses.text} hover:bg-gray-100 rounded-lg transition-colors`}
+                title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              >
+                {theme === "light" ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
+                )}
+              </button>
+
               <button
                 onClick={handleLogout}
-                className="text-sm text-gray-400 hover:text-white"
+                className={`text-sm ${appThemeClasses.textSecondary} hover:${appThemeClasses.text}`}
               >
                 Logout
               </button>
@@ -206,7 +282,9 @@ function App() {
 
       <nav className="sticky top-16 z-40 px-4 py-2">
         <div className="max-w-2xl mx-auto">
-          <div className="flex justify-center space-x-1 bg-secondary-800/75 backdrop-blur-md border border-secondary-700 rounded-xl px-4 py-2 shadow-lg">
+          <div
+            className={`flex justify-center space-x-1 ${appThemeClasses.nav} rounded-xl px-4 py-2 shadow-lg`}
+          >
             {[
               { id: "chat", label: "Ask & Learn" },
               { id: "study", label: "Study Plan" },
@@ -219,8 +297,8 @@ function App() {
                 onClick={() => setCurrentPage(item.id)}
                 className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                   currentPage === item.id
-                    ? "bg-primary-600 text-white shadow-sm"
-                    : "text-gray-300 hover:text-white hover:bg-secondary-700"
+                    ? appThemeClasses.navActive
+                    : appThemeClasses.navInactive
                 }`}
               >
                 {item.label}
@@ -242,7 +320,13 @@ function App() {
           >
             {currentPage === "chat" && <ChatPage user={appState.user} />}
             {currentPage === "study" && (
-              <StudyPlanPage user={appState.user} onStateChange={setAppState} />
+              <StudyPlanPage
+                user={appState.user}
+                onStateChange={(state) => {
+                  // Update the app state when StudyPlanPage changes it
+                  setAppState(state);
+                }}
+              />
             )}
             {currentPage === "flashcards" && (
               <FlashcardsPage user={appState.user} />
@@ -255,5 +339,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
