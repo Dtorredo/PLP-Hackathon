@@ -55,10 +55,18 @@ export class RedisService {
         });
         return response.ok;
       } else if (command === "lrange") {
-        const response = await fetch(url, { headers });
+        const lrangeUrl = `${this.baseUrl}/lrange/${key}/0/-1`;
+        const response = await fetch(lrangeUrl, { headers });
         if (response.status === 404) return [];
         const data = await response.json();
         return data.result || [];
+      } else if (command === "ltrim") {
+        const ltrimUrl = `${this.baseUrl}/ltrim/${key}/0/9`;
+        const response = await fetch(ltrimUrl, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${this.token}` },
+        });
+        return response.ok;
       } else if (command === "del") {
         // Upstash REST API uses POST for delete operations
         const delUrl = `${this.baseUrl}/del/${key}`;
@@ -140,6 +148,48 @@ export class RedisService {
 
   async deleteStudyPlan(planKey: string): Promise<void> {
     await this.makeRequest("del", planKey);
+  }
+
+  // Study Plan History Methods
+  async storeStudyPlanHistory(userId: string, plan: any): Promise<void> {
+    const historyKey = `study_plan:${userId}:history`;
+    const planWithTimestamp = {
+      ...plan,
+      createdAt: new Date().toISOString(),
+      id: `plan_${Date.now()}`,
+    };
+
+    // Add to history list
+    await this.makeRequest(
+      "lpush",
+      historyKey,
+      JSON.stringify(planWithTimestamp)
+    );
+
+    // Trim the history to the last 10 plans
+    await this.makeRequest("ltrim", historyKey);
+  }
+
+  async getStudyPlanHistory(userId: string): Promise<any[]> {
+    const historyKey = `study_plan:${userId}:history`;
+    const history = await this.makeRequest("lrange", historyKey);
+    return history.map((plan: string) => JSON.parse(plan));
+  }
+
+  async getStudyPlanFromHistory(
+    userId: string,
+    planId: string
+  ): Promise<any | null> {
+    const historyKey = `study_plan:${userId}:history`;
+    const history = await this.makeRequest("lrange", historyKey);
+
+    for (const planStr of history) {
+      const plan = JSON.parse(planStr);
+      if (plan.id === planId) {
+        return plan;
+      }
+    }
+    return null;
   }
 
   async updateStudyPlanProgress(

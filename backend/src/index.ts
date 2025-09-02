@@ -102,14 +102,14 @@ app.get("/api/v1/status", (req: Request, res: Response) => {
 app.get("/api/v1/debug/static", (req: Request, res: Response) => {
   const frontendPath = path.join(__dirname, "frontend");
   const indexPath = path.join(frontendPath, "index.html");
-  
+
   res.json({
     frontendPath,
     indexPath,
     frontendExists: fs.existsSync(frontendPath),
     indexExists: fs.existsSync(indexPath),
     currentDir: __dirname,
-    files: fs.readdirSync(__dirname)
+    files: fs.readdirSync(__dirname),
   });
 });
 
@@ -252,9 +252,21 @@ app.post("/api/v1/plan/generate", async (req: Request, res: Response) => {
       preferredTimeSlots
     );
 
+    console.log("Generated plan:", {
+      id: plan.id,
+      userId: plan.userId,
+      tasksCount: plan.tasks.length,
+      createdAt: plan.createdAt,
+    });
+
     // Save the plan to Redis
     const planKey = `study_plan:${userId}:current`;
     await redisService.storeStudyPlan(planKey, plan);
+
+    // Also store in history
+    await redisService.storeStudyPlanHistory(userId, plan);
+
+    console.log("Plan saved to Redis with key:", planKey);
 
     res.json({
       success: true,
@@ -284,6 +296,10 @@ app.get("/api/v1/plan/current/:userId", async (req: Request, res: Response) => {
     const planKey = `study_plan:${userId}:current`;
     const plan = await redisService.getStudyPlan(planKey);
 
+    console.log("Retrieving plan for user:", userId);
+    console.log("Plan key:", planKey);
+    console.log("Plan found:", !!plan);
+
     if (!plan) {
       return res.status(404).json({
         success: false,
@@ -291,19 +307,15 @@ app.get("/api/v1/plan/current/:userId", async (req: Request, res: Response) => {
       });
     }
 
-    // Check if plan is still valid (within the same week)
+    // Check if plan is still valid (within 7 days)
     const planDate = new Date(plan.createdAt);
     const currentDate = new Date();
-    const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Monday
-    weekStart.setHours(0, 0, 0, 0);
+    const daysDifference = Math.floor(
+      (currentDate.getTime() - planDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-    const planWeekStart = new Date(planDate);
-    planWeekStart.setDate(planDate.getDate() - planDate.getDay() + 1); // Monday
-    planWeekStart.setHours(0, 0, 0, 0);
-
-    if (planWeekStart.getTime() !== weekStart.getTime()) {
-      // Plan is from a different week, delete it
+    if (daysDifference > 7) {
+      // Plan is older than 7 days, delete it
       await redisService.deleteStudyPlan(planKey);
       return res.status(404).json({
         success: false,
@@ -421,6 +433,72 @@ app.post("/api/v1/plan/progress", async (req: Request, res: Response) => {
     });
   }
 });
+
+// Get study plan history
+app.get("/api/v1/plan/history/:userId", async (req: Request, res: Response) => {
+  try {
+    if (!redisService) {
+      return res.status(503).json({ error: "Redis Service not available" });
+    }
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required." });
+    }
+
+    const history = await redisService.getStudyPlanHistory(userId);
+
+    res.json({
+      success: true,
+      history,
+    });
+  } catch (error) {
+    console.error("Error in /api/v1/plan/history:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to retrieve study plan history. Please try again.",
+    });
+  }
+});
+
+// Get specific study plan from history
+app.get(
+  "/api/v1/plan/history/:userId/:planId",
+  async (req: Request, res: Response) => {
+    try {
+      if (!redisService) {
+        return res.status(503).json({ error: "Redis Service not available" });
+      }
+      const { userId, planId } = req.params;
+
+      if (!userId || !planId) {
+        return res
+          .status(400)
+          .json({ error: "User ID and Plan ID are required." });
+      }
+
+      const plan = await redisService.getStudyPlanFromHistory(userId, planId);
+
+      if (!plan) {
+        return res.status(404).json({
+          success: false,
+          error: "Study plan not found in history.",
+        });
+      }
+
+      res.json({
+        success: true,
+        plan,
+      });
+    } catch (error) {
+      console.error("Error in /api/v1/plan/history/:planId:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to retrieve study plan. Please try again.",
+      });
+    }
+  }
+);
 
 // Flashcard generation
 app.post("/api/v1/flashcards/generate", async (req: Request, res: Response) => {
@@ -607,17 +685,17 @@ app.get("/api/v1/status", (req: Request, res: Response) => {
 // Serve the frontend app for all other routes
 app.get("*", (req: Request, res: Response) => {
   const indexPath = path.join(__dirname, "frontend/index.html");
-  
+
   // Check if the file exists
   if (!fs.existsSync(indexPath)) {
     console.error(`Frontend index.html not found at: ${indexPath}`);
-    return res.status(404).json({ 
-      error: "Frontend not found", 
+    return res.status(404).json({
+      error: "Frontend not found",
       path: indexPath,
-      currentDir: __dirname 
+      currentDir: __dirname,
     });
   }
-  
+
   res.sendFile(indexPath);
 });
 
@@ -626,7 +704,7 @@ if (process.env.NODE_ENV !== "test") {
   console.log(`Attempting to start server on port ${port}...`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`M-Pesa Consumer Key length: ${MPESA_CONSUMER_KEY.length}`);
-  
+
   // Debug: Check if frontend files exist
   const frontendPath = path.join(__dirname, "frontend");
   const indexPath = path.join(frontendPath, "index.html");

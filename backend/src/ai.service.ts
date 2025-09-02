@@ -19,12 +19,17 @@ interface StudyPlanTask {
   isFlashcardTask?: boolean;
 }
 
+interface TimeSlot {
+  time: string;
+  duration: number;
+}
+
 interface StudyPlan {
   id: string;
   userId: string;
   dailyHours: number;
   weakTopics: string[];
-  preferredTimeSlots: string[];
+  preferredTimeSlots: TimeSlot[];
   tasks: StudyPlanTask[];
   createdAt: Date;
   completedTasks: string[];
@@ -274,11 +279,17 @@ Make sure to use proper markdown formatting with **bold** headers and bullet poi
     userId: string,
     dailyHours: number,
     weakTopics: string[],
-    preferredTimeSlots: string[]
+    preferredTimeSlots: TimeSlot[]
   ): Promise<StudyPlan> {
     if (dailyHours < 2) {
       throw new Error("Daily study hours must be at least 2");
     }
+
+    // Convert TimeSlot objects to readable strings for AI prompt
+    const timeSlotStrings = preferredTimeSlots.map(
+      (slot) => `${slot.time} (${slot.duration} min)`
+    );
+    const timeSlotTimes = preferredTimeSlots.map((slot) => slot.time);
 
     // Generate AI-powered study plan with one topic per day
     if (this.genAI && weakTopics.length > 0) {
@@ -289,21 +300,39 @@ Make sure to use proper markdown formatting with **bold** headers and bullet poi
         const prompt = `Create a 5-day study plan (Monday-Friday) for ${dailyHours} hours daily. 
         
 Topics to focus on: ${weakTopics.join(", ")}
-Available time slots: ${preferredTimeSlots.join(", ")}
+Available time slots: ${timeSlotStrings.join(", ")}
 
 Rules:
 - Assign ONE topic per day (no mixing different subjects)
 - Break each topic into 3-4 subtopics for that day
-- Use only the provided time slots: ${preferredTimeSlots.join(", ")}
-- Each session: 20-30 minutes
+- Use only the provided time slots: ${timeSlotTimes.join(", ")}
+- Each session: 20-30 minutes (respect the duration limits)
 - Add a "Flashcard Review" task at the end of each day
 - Distribute topics evenly across the 5 weekdays
+- Use the exact time formats provided (e.g., "09:30", "14:00")
 
-Format: JSON with tasks array containing: day (1-5), timeSlot, duration (20-30), topic, activity, description, isFlashcardTask (boolean)`;
+IMPORTANT: Respond ONLY with valid JSON in this exact format:
+{
+  "tasks": [
+    {
+      "day": 1,
+      "timeSlot": "09:30",
+      "duration": 30,
+      "topic": "Calculus",
+      "activity": "Review derivatives",
+      "description": "Study basic derivative rules and practice problems",
+      "isFlashcardTask": false
+    }
+  ]
+}
+
+Do not include any text before or after the JSON. Only return the JSON object.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const planText = response.text().trim();
+
+        console.log("AI Response:", planText.substring(0, 200) + "...");
 
         // Try to parse AI response, fallback to default if it fails
         try {
@@ -318,7 +347,8 @@ Format: JSON with tasks array containing: day (1-5), timeSlot, duration (20-30),
               tasks: aiPlan.tasks.map((task: any, index: number) => ({
                 id: `task-${index}`,
                 day: task.day || Math.floor(index / 3) + 1,
-                timeSlot: task.timeSlot || preferredTimeSlots[0],
+                timeSlot:
+                  task.timeSlot || preferredTimeSlots[0]?.time || "09:00",
                 duration: task.duration || 30,
                 topic: task.topic || weakTopics[0],
                 activity: task.activity || "Study session",
@@ -374,7 +404,8 @@ Format: JSON with tasks array containing: day (1-5), timeSlot, duration (20-30),
           30,
           Math.max(20, Math.floor(Math.random() * 20) + 20)
         );
-        const timeSlot = preferredTimeSlots[i % preferredTimeSlots.length];
+        const timeSlot =
+          preferredTimeSlots[i % preferredTimeSlots.length]?.time || "09:00";
         const activity =
           activities[Math.floor(Math.random() * activities.length)];
 
@@ -397,7 +428,8 @@ Format: JSON with tasks array containing: day (1-5), timeSlot, duration (20-30),
       // Add flashcard review task at the end of the day
       if (dayMinutes < maxDayMinutes) {
         const flashcardDuration = Math.min(30, maxDayMinutes - dayMinutes);
-        const lastTimeSlot = preferredTimeSlots[preferredTimeSlots.length - 1];
+        const lastTimeSlot =
+          preferredTimeSlots[preferredTimeSlots.length - 1]?.time || "18:00";
 
         tasks.push({
           id: `task-${tasks.length}`,
