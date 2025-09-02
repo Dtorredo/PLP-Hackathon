@@ -52,6 +52,11 @@ export function SignInPage({
         projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
       });
 
+      // Force account selection by setting custom parameters
+      googleProvider.setCustomParameters({
+        prompt: "select_account",
+      });
+
       // Try popup first
       try {
         const result = await signInWithPopup(auth, googleProvider);
