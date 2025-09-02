@@ -23,8 +23,15 @@ COPY . .
 # Build the project
 RUN pnpm run build
 
+# Copy the frontend dist files to the backend dist directory for serving
+RUN mkdir -p backend/dist/frontend && cp -r frontend/dist/* backend/dist/frontend/
+
+# Copy the frontend public files to the backend dist directory for serving
+RUN mkdir -p backend/dist/frontend/public && cp -r frontend/public/* backend/dist/frontend/public/
+
 # List backend build output for verification
 RUN ls -la backend/dist/
+RUN ls -la backend/dist/frontend/ || echo "Frontend directory not found"
 
 # The command to run the backend server
 CMD ["pnpm", "--filter", "backend", "start"]

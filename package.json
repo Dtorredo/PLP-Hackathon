@@ -6,7 +6,9 @@
     "dev:backend": "pnpm --filter backend dev",
     "dev": "pnpm run --parallel dev:*",
     "build": "pnpm run --parallel build",
-    "install:all": "pnpm install"
+    "install:all": "pnpm install",
+    "setup:dev": "./dev-setup.sh",
+    "start:dev": "./dev-setup.sh && cd backend && pnpm start"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

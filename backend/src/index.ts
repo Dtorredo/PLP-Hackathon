@@ -1,6 +1,8 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
+import path from "path";
+import fs from "fs";
 import { AIService } from "./ai.service";
 import { RedisService } from "./redis.service";
 import { paymentService } from "./payment.service";
@@ -60,6 +62,7 @@ try {
   console.log("AI Service initialized successfully");
 } catch (error) {
   console.error("Failed to initialize AI Service:", error);
+  console.log("AI Service will be disabled - some features may not work");
 }
 
 try {
@@ -67,6 +70,7 @@ try {
   console.log("Redis Service initialized successfully");
 } catch (error) {
   console.error("Failed to initialize Redis Service:", error);
+  console.log("Redis Service will be disabled - some features may not work");
 }
 
 console.log(
@@ -81,9 +85,32 @@ app.use("/api/v1/payment/webhook", express.raw({ type: "application/json" }));
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the frontend dist directory
+app.use(express.static(path.join(__dirname, "frontend")));
+
+// Serve favicon.ico specifically
+app.get("/favicon.ico", (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, "frontend/public/favicon.ico"));
+});
+
 // Health check
 app.get("/api/v1/status", (req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Debug endpoint to check static file serving
+app.get("/api/v1/debug/static", (req: Request, res: Response) => {
+  const frontendPath = path.join(__dirname, "frontend");
+  const indexPath = path.join(frontendPath, "index.html");
+  
+  res.json({
+    frontendPath,
+    indexPath,
+    frontendExists: fs.existsSync(frontendPath),
+    indexExists: fs.existsSync(indexPath),
+    currentDir: __dirname,
+    files: fs.readdirSync(__dirname)
+  });
 });
 
 // Ask question endpoint - now with AI
@@ -577,11 +604,36 @@ app.get("/api/v1/status", (req: Request, res: Response) => {
   });
 });
 
+// Serve the frontend app for all other routes
+app.get("*", (req: Request, res: Response) => {
+  const indexPath = path.join(__dirname, "frontend/index.html");
+  
+  // Check if the file exists
+  if (!fs.existsSync(indexPath)) {
+    console.error(`Frontend index.html not found at: ${indexPath}`);
+    return res.status(404).json({ 
+      error: "Frontend not found", 
+      path: indexPath,
+      currentDir: __dirname 
+    });
+  }
+  
+  res.sendFile(indexPath);
+});
+
 // Start server
 if (process.env.NODE_ENV !== "test") {
   console.log(`Attempting to start server on port ${port}...`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`M-Pesa Consumer Key length: ${MPESA_CONSUMER_KEY.length}`);
+  
+  // Debug: Check if frontend files exist
+  const frontendPath = path.join(__dirname, "frontend");
+  const indexPath = path.join(frontendPath, "index.html");
+  console.log(`Frontend path: ${frontendPath}`);
+  console.log(`Index path: ${indexPath}`);
+  console.log(`Frontend exists: ${fs.existsSync(frontendPath)}`);
+  console.log(`Index exists: ${fs.existsSync(indexPath)}`);
 
   app
     .listen(Number(port), "0.0.0.0", () => {
