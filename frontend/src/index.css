@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body {
+    overflow: hidden;
+    height: 100%;
+  }
+
   html {
     font-family: "Inter", system-ui, sans-serif;
   }

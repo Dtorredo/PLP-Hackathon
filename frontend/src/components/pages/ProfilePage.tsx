@@ -19,21 +19,21 @@ export function ProfilePage({ user }: ProfilePageProps) {
     return {
       container:
         theme === "light"
-          ? "bg-white rounded-lg shadow-sm border border-gray-200"
-          : "bg-secondary-800 rounded-lg shadow-lg border border-secondary-700",
+          ? "bg-[#FDF2F8] rounded-lg shadow-sm border border-gray-200"
+          : "bg-[#140D13] rounded-lg shadow-lg border border-secondary-700",
       text: theme === "light" ? "text-gray-900" : "text-white",
       textSecondary: theme === "light" ? "text-gray-600" : "text-gray-300",
       textTertiary: theme === "light" ? "text-gray-500" : "text-gray-400",
       card:
         theme === "light"
-          ? "bg-gray-50 border border-gray-200"
-          : "bg-secondary-800 border border-secondary-700",
+          ? "bg-[#FDF2F8] border border-gray-200"
+          : "bg-[#140D13] border border-secondary-700",
       specialCard:
         theme === "light"
-          ? "bg-purple-50 border border-purple-200"
+          ? "bg-pink-50 border border-pink-200"
           : "bg-secondary-650 border-secondary-700",
-      iconBg: theme === "light" ? "bg-purple-100" : "bg-primary-900",
-      iconColor: theme === "light" ? "text-purple-600" : "text-primary-400",
+      iconBg: theme === "light" ? "bg-pink-100" : "bg-primary-900",
+      iconColor: theme === "light" ? "text-pink-600" : "text-primary-400",
       greenIconBg: theme === "light" ? "bg-green-100" : "bg-green-900",
       greenIconColor: theme === "light" ? "text-green-600" : "text-green-400",
       targetIconBg: theme === "light" ? "bg-gray-100" : "bg-secondary-650",
@@ -52,7 +52,7 @@ export function ProfilePage({ user }: ProfilePageProps) {
       : new Date(user.lastActive);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pt-8">
       {/* Profile Header */}
       <div className={`${themeClasses.container} p-6`}>
         <div className="flex items-center gap-6">
@@ -124,7 +124,7 @@ export function ProfilePage({ user }: ProfilePageProps) {
         <h2
           className={`text-xl font-bold ${themeClasses.text} mb-6 flex items-center gap-2`}
         >
-          <Award className="w-5 h-5 text-purple-600" />
+          <Award className="w-5 h-5 text-pink-600" />
           Achievements & Badges
         </h2>
 

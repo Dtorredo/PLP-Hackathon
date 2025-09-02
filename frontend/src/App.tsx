@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Trophy, TrendingUp, Sun, Moon } from "lucide-react";
+import { PandaIcon } from "./components/ui/PandaIcon";
+import { LogOutIcon } from "./components/ui/LogOutIcon";
 import { LandingPage } from "./components/pages/LandingPage";
 import { ChatPage } from "./components/pages/ChatPage";
 import { StudyPlanPage } from "./components/pages/StudyPlanPage";
@@ -202,18 +204,18 @@ function MainApp({
   // Theme-aware classes for the main app layout
   const getAppThemeClasses = () => {
     return {
-      background: theme === "light" ? "bg-gray-50" : "bg-black",
+      background: theme === "light" ? "bg-[#FAF5FA]" : "bg-[#231E28]",
       header:
         theme === "light"
-          ? "bg-white shadow-sm border-b border-gray-200"
-          : "bg-black shadow-sm border-b border-secondary-700",
+          ? "bg-[#FAF5FA] shadow-sm border-b border-gray-200"
+          : "bg-[#231E28] shadow-sm border-b border-secondary-700",
       nav:
         theme === "light"
-          ? "bg-white/75 backdrop-blur-md border border-gray-200"
+          ? "bg-[#FAF5FA]/75 backdrop-blur-md border border-gray-200"
           : "bg-secondary-800/75 backdrop-blur-md border border-secondary-700",
       navActive:
         theme === "light"
-          ? "bg-purple-600 text-white shadow-sm"
+          ? "bg-pink-600 text-white shadow-sm"
           : "bg-primary-600 text-white shadow-sm",
       navInactive:
         theme === "light"
@@ -221,7 +223,7 @@ function MainApp({
           : "text-gray-300 hover:text-white hover:bg-secondary-700",
       text: theme === "light" ? "text-gray-900" : "text-white",
       textSecondary: theme === "light" ? "text-gray-600" : "text-gray-300",
-      icon: theme === "light" ? "text-purple-600" : "text-primary-600",
+      icon: theme === "light" ? "text-pink-600" : "text-primary-600",
     };
   };
 
@@ -229,58 +231,41 @@ function MainApp({
 
   return (
     <div className={`min-h-screen ${appThemeClasses.background}`}>
-      <header className={`sticky top-0 z-50 ${appThemeClasses.header}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <Brain className={`h-8 w-8 ${appThemeClasses.icon}`} />
-              <h1 className={`text-xl font-bold ${appThemeClasses.text}`}>
-                AI Study Buddy
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                <span
-                  className={`text-sm font-medium ${appThemeClasses.textSecondary}`}
-                >
-                  {appState.user.points} pts
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-                <span
-                  className={`text-sm font-medium ${appThemeClasses.textSecondary}`}
-                >
-                  {appState.user.streak} day streak
-                </span>
-              </div>
-
-              {/* Theme Toggle Button */}
-              <button
-                onClick={toggleTheme}
-                className={`p-2 ${appThemeClasses.textSecondary} hover:${appThemeClasses.text} hover:bg-gray-100 rounded-lg transition-colors`}
-                title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-              >
-                {theme === "light" ? (
-                  <Moon className="w-5 h-5" />
-                ) : (
-                  <Sun className="w-5 h-5" />
-                )}
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className={`text-sm ${appThemeClasses.textSecondary} hover:${appThemeClasses.text}`}
-              >
-                Logout
-              </button>
-            </div>
-          </div>
+      {/* Small navbar with theme toggle and logout at top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <div
+          className={`flex items-center gap-2 ${appThemeClasses.nav} rounded-lg px-3 py-2 shadow-lg`}
+        >
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-md transition-colors ${
+              theme === "light"
+                ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                : "text-gray-300 hover:text-white hover:bg-secondary-700"
+            }`}
+            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? (
+              <Moon className="w-5 h-5" />
+            ) : (
+              <Sun className="w-5 h-5" />
+            )}
+          </button>
+          <button
+            onClick={handleLogout}
+            className={`p-2 rounded-md transition-colors ${
+              theme === "light"
+                ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                : "text-gray-300 hover:text-white hover:bg-secondary-700"
+            }`}
+            title="Logout"
+          >
+            <LogOutIcon className="w-5 h-5" />
+          </button>
         </div>
-      </header>
+      </div>
 
-      <nav className="sticky top-16 z-40 px-4 py-2">
+      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-40 px-4 py-2">
         <div className="max-w-2xl mx-auto">
           <div
             className={`flex justify-center space-x-1 ${appThemeClasses.nav} rounded-xl px-4 py-2 shadow-lg`}
@@ -308,7 +293,7 @@ function MainApp({
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pt-20">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}

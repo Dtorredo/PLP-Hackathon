@@ -561,6 +561,7 @@ app.post(
   async (req: Request, res: Response) => {
     try {
       const { plan, phoneNumber, userId } = req.body;
+      console.log(req.body);
 
       if (!plan || !phoneNumber) {
         return res

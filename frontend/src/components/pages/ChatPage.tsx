@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, MessageCircle } from "lucide-react";
+import {
+  Send,
+  Search,
+  User as UserIcon,
+} from "lucide-react";
 import type { User, ChatMessage } from "../../lib/types";
 import { db } from "../../lib/firebase";
 import {
@@ -9,6 +13,9 @@ import {
   serverTimestamp,
   doc,
   setDoc,
+  getDocs,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import ReactMarkdown from "react-markdown";
@@ -25,50 +32,117 @@ export function ChatPage({ user }: ChatPageProps) {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      const sessionsRef = collection(db, "users", user.id, "chatSessions");
+      const q = query(sessionsRef, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setChatHistory(history);
+    };
+
+    if (user.id) {
+      fetchChatHistory();
+    }
+  }, [user.id]);
+
+  // Filter history items based on search query
+  const filteredHistoryItems = chatHistory.filter(
+    (item) =>
+      searchQuery === "" ||
+      item.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Group filtered items by section
+  const groupedHistory = {
+    "Chat History": filteredHistoryItems,
+  }
 
   // Theme-aware classes
   const getThemeClasses = () => {
     return {
-      container:
+      // Main layout
+      mainContainer: theme === "light" ? "bg-[#FAF5FA]" : "bg-[#231E28]",
+      sidebar:
         theme === "light"
-          ? "bg-white rounded-lg shadow-sm border border-gray-200"
-          : "bg-secondary-800 rounded-lg shadow-lg border border-secondary-700",
-      text: theme === "light" ? "text-gray-900" : "text-white",
-      textSecondary: theme === "light" ? "text-gray-600" : "text-gray-300",
+          ? "bg-[#F1DEF7] border-r border-gray-200"
+          : "bg-[#140D13] border-r border-secondary-700",
+      chatArea: theme === "light" ? "bg-[#FAF5FA]" : "bg-[#231E28]",
+
+      // Text colors
+      text: theme === "light" ? "text-[#492C61]" : "text-white",
+      textSecondary: theme === "light" ? "text-[#492C61]/80" : "text-gray-300",
+
+      // Buttons
+      newChatButton:
+        theme === "light"
+          ? "bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+          : "bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white",
+
+      // Input area
+      inputContainer:
+        theme === "light"
+          ? "bg-white shadow-lg border border-gray-200"
+          : "bg-secondary-800 shadow-lg border border-secondary-700",
       input:
         theme === "light"
-          ? "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          ? "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
           : "bg-secondary-800 border border-secondary-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500",
+      searchInput:
+        theme === "light"
+          ? "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+          : "bg-secondary-700 border border-secondary-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500",
       button:
         theme === "light"
-          ? "bg-purple-600 hover:bg-purple-700 text-white"
-          : "bg-primary-600 hover:bg-primary-700 text-white",
-      messagesContainer:
-        theme === "light"
-          ? "bg-gray-50 border border-gray-200"
-          : "bg-secondary-900 border border-secondary-700",
+          ? "bg-pink-600 hover:bg-pink-700 text-white"
+          : "bg-primary-600 hover:primary-700 text-white",
+
+      // Messages
       userMessage:
         theme === "light"
-          ? "bg-purple-600 text-white"
+          ? "bg-pink-600 text-white"
           : "bg-primary-600 text-white",
       aiMessage:
         theme === "light"
-          ? "bg-white border border-gray-200 text-gray-900"
+          ? "bg-white border border-gray-200 text-[#492C61]"
           : "bg-secondary-800 text-white",
+
+      // Code blocks (pink background like flashcards)
       codeBlock:
         theme === "light"
-          ? "bg-gray-100 border border-gray-200"
+          ? "bg-[#F2DEF6] border border-gray-200"
           : "bg-secondary-900 border border-secondary-700",
       inlineCode:
         theme === "light"
-          ? "bg-gray-100 px-1 py-0.5 rounded text-sm"
+          ? "bg-[#F2DEF6] px-1 py-0.5 rounded text-sm"
           : "bg-secondary-700 px-1 py-0.5 rounded text-sm",
-      heading: theme === "light" ? "text-gray-900" : "text-white",
-      paragraph: theme === "light" ? "text-gray-700" : "text-gray-300",
-      listItem: theme === "light" ? "text-gray-700" : "text-gray-300",
-      strong: theme === "light" ? "text-gray-900" : "text-white",
-      emphasis: theme === "light" ? "text-gray-600" : "text-gray-300",
+
+      // Markdown elements
+      heading: theme === "light" ? "text-[#492C61]" : "text-white",
+      paragraph: theme === "light" ? "text-[#492C61]" : "text-gray-300",
+      listItem: theme === "light" ? "text-[#492C61]" : "text-gray-300",
+      strong: theme === "light" ? "text-[#492C61]" : "text-white",
+      emphasis: theme === "light" ? "text-[#492C61]/80" : "text-gray-300",
+
+      // History items
+      historyItem:
+        theme === "light"
+          ? "bg-white border border-gray-200 hover:bg-gray-50"
+          : "bg-secondary-700 border border-secondary-600 hover:bg-secondary-600",
+      selectedHistoryItem:
+        theme === "light"
+          ? "bg-pink-50 border-pink-200"
+          : "bg-primary-900 border-primary-700",
+
+      // User profile
+      userProfile:
+        theme === "light"
+          ? "bg-gray-50 border-t border-gray-200"
+          : "bg-secondary-700 border-t border-secondary-600",
     };
   };
 
@@ -146,10 +220,12 @@ export function ChatPage({ user }: ChatPageProps) {
 
       if (response.ok) {
         const data = await response.json();
+        let content = data.answer;
+        content = content.replace(/\n(?!\n)/g, ' ');
         const aiResponse: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: data.answer,
+          content: content,
           timestamp: new Date(),
           confidence: data.confidence || 0.85,
         };
@@ -193,168 +269,233 @@ export function ChatPage({ user }: ChatPageProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className={`${themeClasses.container} p-6 mb-6`}>
-        <h2
-          className={`text-2xl font-bold ${themeClasses.text} mb-4 flex items-center gap-2`}
-        >
-          <MessageCircle className="w-6 h-6 text-purple-600" />
-          Ask & Learn
-        </h2>
-        <p className={themeClasses.textSecondary}>
-          Ask me anything about your subjects. I'll provide detailed
-          explanations with sources and practice questions.
-        </p>
-      </div>
-
-      {/* Input - Fixed below header */}
-      <div className="flex gap-4 mb-4">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-          placeholder="Ask me anything about your subjects..."
-          className={`${themeClasses.input} flex-1 px-4 py-2 rounded-lg focus:outline-none`}
-          disabled={isLoading}
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim() || isLoading}
-          className={`${themeClasses.button} px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
-        >
-          <Send className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Messages Container - Scrollable below input */}
+    <div className={`${themeClasses.mainContainer} h-screen flex pt-24`}>
+      {/* Sidebar - Floating container with margins */}
       <div
-        className={`${themeClasses.messagesContainer} rounded-lg p-4 min-h-96 max-h-[600px] overflow-y-auto`}
+        className={`${themeClasses.sidebar} w-80 p-4 rounded-xl shadow-lg sidebar-scrollbar -ml-16 flex flex-col h-full`}
       >
-        <div className="space-y-4">
-          <AnimatePresence>
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-3xl rounded-lg p-4 ${
-                    message.role === "user"
-                      ? themeClasses.userMessage
-                      : themeClasses.aiMessage
-                  }`}
-                >
-                  <div className="prose prose-invert max-w-none">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        // Customize code blocks
-                        code: ({
-                          node,
-                          inline,
-                          className,
-                          children,
-                          ...props
-                        }: any) => {
-                          return !inline ? (
-                            <pre
-                              className={`${themeClasses.codeBlock} p-3 rounded-lg overflow-x-auto`}
-                            >
-                              <code className={className} {...props}>
-                                {children}
-                              </code>
-                            </pre>
-                          ) : (
-                            <code
-                              className={`${themeClasses.inlineCode}`}
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          );
-                        },
-                        // Customize headings
-                        h1: ({ children }) => (
-                          <h1
-                            className={`text-2xl font-bold ${themeClasses.heading} mb-4`}
-                          >
-                            {children}
-                          </h1>
-                        ),
-                        h2: ({ children }) => (
-                          <h2
-                            className={`text-xl font-bold ${themeClasses.heading} mb-3`}
-                          >
-                            {children}
-                          </h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3
-                            className={`text-lg font-bold ${themeClasses.heading} mb-2`}
-                          >
-                            {children}
-                          </h3>
-                        ),
-                        // Customize lists
-                        ul: ({ children }) => (
-                          <ul className="list-disc list-inside mb-4 space-y-1">
-                            {children}
-                          </ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="list-decimal list-inside mb-4 space-y-1">
-                            {children}
-                          </ol>
-                        ),
-                        li: ({ children }) => (
-                          <li className={themeClasses.listItem}>{children}</li>
-                        ),
-                        // Customize paragraphs - prevent line breaks and preserve code formatting
-                        p: ({ children }) => (
-                          <p
-                            className={`mb-3 ${themeClasses.paragraph} leading-relaxed whitespace-pre-wrap break-words`}
-                          >
-                            {children}
-                          </p>
-                        ),
-                        // Customize strong text
-                        strong: ({ children }) => (
-                          <strong
-                            className={`font-semibold ${themeClasses.strong}`}
-                          >
-                            {children}
-                          </strong>
-                        ),
-                        // Customize emphasis
-                        em: ({ children }) => (
-                          <em className={`italic ${themeClasses.emphasis}`}>
-                            {children}
-                          </em>
-                        ),
-                      }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+        {/* Search Bar */}
+        <div className="p-4 pt-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search your threads..."
+              className={`${themeClasses.searchInput} w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none text-sm`}
+            />
+          </div>
+        </div>
 
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className={`${themeClasses.aiMessage} rounded-lg p-4`}>
-                <LoadingSpinner size="sm" />
+        {/* Chat History */}
+        <div className="flex-1 px-4 space-y-6 overflow-y-auto">
+          {Object.entries(groupedHistory).map(([section, items]) => (
+            <div key={section}>
+              <h3
+                className={`text-xs font-semibold ${themeClasses.textSecondary} uppercase tracking-wider mb-3`}
+              >
+                {section}
+              </h3>
+              <div className="space-y-1">
+                {items.map((item, index) => (
+                  <div
+                    key={`${section}-${index}`}
+                    className={`${themeClasses.historyItem} p-3 rounded-lg cursor-pointer`}
+                    onClick={() => console.log(item.id)}
+                  >
+                    <p
+                      className={`text-sm ${themeClasses.text} font-medium truncate`}
+                    >
+                      {item.id}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+          ))}
 
-          <div ref={messagesEndRef} />
+          {searchQuery && filteredHistoryItems.length === 0 && (
+            <div className="px-4 py-8 text-center">
+              <p className={`text-sm ${themeClasses.textSecondary}`}>
+                No conversations found matching "{searchQuery}"
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Floating Profile Section at Bottom */}
+        <div
+          className={`${themeClasses.userProfile} p-3 rounded-lg mx-4 mb-8 shadow-lg`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+              <UserIcon className="w-4 h-4 text-yellow-800" />
+            </div>
+            <div className="flex-1">
+              <p className={`text-sm ${themeClasses.text} font-medium`}>
+                {user.name}
+              </p>
+              <p className={`text-xs ${themeClasses.textSecondary}`}>Free</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Area - Full width with proper padding */}
+      <div
+        className={`${themeClasses.chatArea} flex-1 flex flex-col h-full p-6 pl-2`}
+      >
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto p-6 pb-8">
+          <div className="space-y-4 max-w-4xl mx-auto">
+            <AnimatePresence>
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-3xl rounded-lg p-4 ${
+                      message.role === "user"
+                        ? themeClasses.userMessage
+                        : themeClasses.aiMessage
+                    }`}
+                  >
+                    <div className="max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          // Customize code blocks - pink background like flashcards
+                          code: ({
+                            inline,
+                            className,
+                            children,
+                            ...props
+                          }: {
+                            inline?: boolean;
+                            className?: string;
+                            children: React.ReactNode;
+                          }) => {
+                            return !inline ? (
+                              <pre
+                                className={`${themeClasses.codeBlock} p-3 rounded-lg overflow-x-auto my-3 whitespace-pre-wrap`}
+                              >
+                                <code className={className} {...props}>
+                                  {children}
+                                </code>
+                              </pre>
+                            ) : (
+                              <code
+                                className={`${themeClasses.inlineCode}`}
+                                {...props}
+                              >
+                                {children}
+                              </code>
+                            );
+                          },
+                          // Customize headings
+                          h1: ({ children }) => (
+                            <h1
+                              className={`text-2xl font-bold ${themeClasses.heading} mb-4`}
+                            >
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2
+                              className={`text-xl font-bold ${themeClasses.heading} mb-3`}
+                            >
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3
+                              className={`text-lg font-bold ${themeClasses.heading} mb-2`}
+                            >
+                              {children}
+                            </h3>
+                          ),
+                          // Customize lists
+                          ul: ({ children }) => (
+                            <ul className="list-disc list-inside mb-4 space-y-1">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal list-inside mb-4 space-y-1">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className={themeClasses.listItem}>
+                              {children}
+                            </li>
+                          ),
+                          
+                          // Customize strong text
+                          strong: ({ children }) => (
+                            <strong
+                              className={`font-semibold ${themeClasses.strong}`}
+                            >
+                              {children}
+                            </strong>
+                          ),
+                          // Customize emphasis
+                          em: ({ children }) => (
+                            <em className={`italic ${themeClasses.emphasis}`}>
+                              {children}
+                            </em>
+                          ),
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className={`${themeClasses.aiMessage} rounded-lg p-4`}>
+                  <LoadingSpinner size="sm" />
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        {/* Floating Input Area at Bottom */}
+        <div
+          className={`${themeClasses.inputContainer} fixed bottom-6 left-1/2 transform -translate-x-1/2 z-20 rounded-xl shadow-lg`}
+          style={{ width: "max-content", maxWidth: "48rem" }}
+        >
+          <div className="max-w-3xl mx-auto flex gap-3 p-3">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+              placeholder="Type your message here..."
+              className={`${themeClasses.input} flex-1 px-4 py-3 rounded-lg focus:outline-none`}
+              disabled={isLoading}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isLoading}
+              className={`${themeClasses.button} px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

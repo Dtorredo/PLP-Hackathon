@@ -2,6 +2,7 @@ import { CardStack } from "../core/CardStack";
 import type { StackableItem } from "../../lib/types";
 import { Flashcard } from "./Flashcard";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { useTheme } from "../../lib/theme.tsx";
 
 export interface FlashcardData extends StackableItem {
   question: string;
@@ -21,6 +22,16 @@ export function FlashcardStack({
   onCardSentToBack,
   isLoading,
 }: FlashcardStackProps) {
+  const { theme } = useTheme();
+
+  const getThemeClasses = () => {
+    return {
+      text: theme === "light" ? "text-gray-600" : "text-gray-400",
+    };
+  };
+
+  const themeClasses = getThemeClasses();
+
   if (isLoading) {
     // 🎯 LOADING STATE SIZE - Match this with the card size in CardStack.tsx
     return (
@@ -35,7 +46,9 @@ export function FlashcardStack({
     return (
       <div className="h-[420px] w-[420px] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-400">Select a topic to generate flashcards</p>
+          <p className={themeClasses.text}>
+            Select a topic to generate flashcards
+          </p>
         </div>
       </div>
     );

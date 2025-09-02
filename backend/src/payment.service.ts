@@ -5,6 +5,9 @@ import {
   getDoc,
   collection,
   addDoc,
+  query,
+  where,
+  getDocs,
   serverTimestamp,
 } from "firebase/firestore";
 import axios from "axios";
@@ -91,7 +94,7 @@ export class PaymentService {
 
     try {
       const auth = Buffer.from(
-        `${MPESA_CONSUMER_KEY || ""}:${MPESA_CONSUMER_SECRET || ""}`
+        `${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`
       ).toString("base64");
 
       const response = await axios.get(
@@ -140,11 +143,12 @@ export class PaymentService {
         PhoneNumber: paymentRequest.phoneNumber,
         CallBackURL:
           process.env.NODE_ENV === "production"
-            ? "https://plp-hackathon.fly.dev/api/v1/payment/mpesa-callback"
-            : "https://webhook.site/8f7d6e5c-4b3a-2f1e-0d9c-8b7a6f5e4d3c",
-        AccountReference: paymentRequest.reference,
+            ? "https://yourdomain.com/api/v1/payment/mpesa-callback"
+            : "https://webhook.site/your-test-url", // or use ngrok during local testing
+        AccountReference: paymentRequest.userId, // Pass userId here for identification
         TransactionDesc: `AI Study Buddy - ${paymentRequest.planId}`,
       };
+      
 
       const response = await axios.post(
         `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
@@ -185,11 +189,9 @@ export class PaymentService {
   async handleMpesaCallback(webhookData: MpesaWebhook): Promise<boolean> {
     try {
       console.log("Processing M-Pesa callback:", webhookData);
-
       const { stkCallback } = webhookData.Body;
 
       if (stkCallback.ResultCode === 0) {
-        // Payment successful
         const metadata = stkCallback.CallbackMetadata?.Item || [];
         const amount = metadata.find((item) => item.Name === "Amount")
           ?.Value as number;
@@ -199,12 +201,13 @@ export class PaymentService {
         const phoneNumber = metadata.find((item) => item.Name === "PhoneNumber")
           ?.Value as string;
 
-        // Create subscription
+        const userId = stkCallback.MerchantRequestID || phoneNumber;
+
         await this.createSubscription({
           id: mpesaReceiptNumber,
-          userId: phoneNumber, // Using phone number as user ID
-          planId: "premium", // You can extract this from metadata
-          amount: amount,
+          userId,
+          planId: "premium", // You may need a better way to track planId
+          amount,
           currency: "KES",
         });
 
@@ -219,8 +222,14 @@ export class PaymentService {
     }
   }
 
-  // Create subscription record
-  private async createSubscription(paymentData: any): Promise<void> {
+  // Create subscription
+  private async createSubscription(paymentData: {
+    id: string;
+    userId: string;
+    planId: string;
+    amount: number;
+    currency: string;
+  }): Promise<void> {
     const subscriptionData: Subscription = {
       id: paymentData.id,
       userId: paymentData.userId,
@@ -236,31 +245,29 @@ export class PaymentService {
 
     const subscriptionRef = doc(db, "subscriptions", paymentData.id);
     await setDoc(subscriptionRef, subscriptionData);
+
+    // Update user's profile with active subscription
+    const userRef = doc(db, "users", paymentData.userId);
+    await setDoc(userRef, { subscription: subscriptionData }, { merge: true });
   }
 
   // Calculate subscription end date
   private calculateEndDate(planId: string): Date {
     const now = new Date();
-    switch (planId) {
-      case "basic":
-        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-      case "premium":
-        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-      case "pro":
-        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-      default:
-        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-    }
+    const duration = 30 * 24 * 60 * 60 * 1000; // 30 days
+    return new Date(now.getTime() + duration);
   }
 
-  // Get user subscription
+  // Get user subscription from subscriptions collection
   async getUserSubscription(userId: string): Promise<Subscription | null> {
     try {
-      const userRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userRef);
+      const subsRef = collection(db, "subscriptions");
+      const q = query(subsRef, where("userId", "==", userId));
+      const snapshot = await getDocs(q);
 
-      if (userDoc.exists() && userDoc.data().subscription) {
-        return userDoc.data().subscription;
+      if (!snapshot.empty) {
+        const docSnap = snapshot.docs[0];
+        return docSnap.data() as Subscription;
       }
 
       return null;
@@ -274,7 +281,8 @@ export class PaymentService {
   async hasActiveSubscription(userId: string): Promise<boolean> {
     const subscription = await this.getUserSubscription(userId);
     return (
-      subscription?.status === "active" && subscription?.endDate > new Date()
+      subscription?.status === "active" &&
+      new Date(subscription.endDate) > new Date()
     );
   }
 

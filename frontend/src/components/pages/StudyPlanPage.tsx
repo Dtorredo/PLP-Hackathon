@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
-  BookOpen,
   CheckCircle,
   Clock,
   Target,
@@ -16,6 +15,7 @@ import {
 import type { User, AppState } from "../../lib/types";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { useTheme } from "../../lib/theme.tsx";
+import { PandaIcon } from "../ui/PandaIcon";
 
 interface StudyPlanTask {
   id: string;
@@ -94,25 +94,29 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     return {
       container:
         theme === "light"
-          ? "bg-white rounded-lg shadow-sm border border-gray-200"
-          : "bg-secondary-800 rounded-lg shadow-lg border border-secondary-700",
+          ? "bg-[#F2DEF6] rounded-lg shadow-sm border border-gray-200"
+          : "bg-[#140D13] rounded-lg shadow-lg border border-secondary-700",
       text: theme === "light" ? "text-gray-900" : "text-white",
       textSecondary: theme === "light" ? "text-gray-600" : "text-gray-300",
       input:
         theme === "light"
-          ? "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-          : "bg-secondary-800 border border-secondary-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500",
+          ? "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 px-3 py-2 rounded-lg focus:outline-none"
+          : "bg-secondary-800 border border-secondary-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 px-3 py-2 rounded-lg focus:outline-none",
       button:
         theme === "light"
-          ? "bg-purple-600 hover:bg-purple-700 text-white"
-          : "bg-primary-600 hover:bg-primary-700 text-white",
+          ? "bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          : "bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors",
       buttonSecondary:
         theme === "light"
-          ? "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
-          : "bg-secondary-700 hover:bg-secondary-600 text-gray-300 border border-secondary-600",
+          ? "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg font-medium transition-colors"
+          : "bg-secondary-700 hover:bg-secondary-600 text-gray-300 border border-secondary-600 px-4 py-2 rounded-lg font-medium transition-colors",
+      buttonDisabled:
+        theme === "light"
+          ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+          : "bg-secondary-700 text-gray-400 cursor-not-allowed border border-secondary-600",
       card:
         theme === "light"
-          ? "bg-gray-50 border border-gray-200"
+          ? "bg-[#FAF5FA] border border-gray-200"
           : "bg-secondary-800 border border-secondary-700",
     };
   };
@@ -523,13 +527,13 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   if (showPlanForm) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className={`${themeClasses.container} p-8`}>
-          <div className="text-center mb-8">
-            <BookOpen className="w-16 h-16 text-purple-600 mx-auto mb-4" />
-            <h2 className={`text-3xl font-bold ${themeClasses.text} mb-2`}>
-              AI Study Plan Generator
+        <div className={`${themeClasses.container} p-6`}>
+          <div className="text-center mb-6">
+            <PandaIcon className="w-12 h-12 text-pink-600 mx-auto mb-3" />
+            <h2 className={`text-2xl font-bold ${themeClasses.text} mb-2`}>
+              Study Plan Generator
             </h2>
-            <p className={themeClasses.textSecondary}>
+            <p className={`text-sm ${themeClasses.textSecondary}`}>
               Create your personalized study plan with AI assistance
             </p>
           </div>
@@ -561,7 +565,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                   weakTopics.length >= 5 ||
                   weakTopics.includes(newTopic.trim())
                 }
-                className={`px-4 py-2 ${themeClasses.button} rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1`}
+                className={`${themeClasses.button} disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1`}
               >
                 <Plus className="w-4 h-4" />
                 Add
@@ -643,7 +647,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
               <button
                 onClick={addTimeSlot}
                 disabled={preferredTimeSlots.length >= 5 || !newTimeSlot.trim()}
-                className={`px-4 py-2 ${themeClasses.button} rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`${themeClasses.button} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Add
               </button>
@@ -702,10 +706,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                 preferredTimeSlots.length > 0 &&
                 !isGenerating
                   ? themeClasses.button
-                  : themeClasses.buttonSecondary.replace(
-                      "hover:bg-gray-200 text-gray-700 border border-gray-300",
-                      "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
-                    )
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 px-6 py-3 rounded-lg font-medium"
               }`}
             >
               {isGenerating ? (
@@ -739,16 +740,6 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className={`${themeClasses.container} p-8`}>
-          <div className="text-center mb-8">
-            <BookOpen className="w-16 h-16 text-purple-600 mx-auto mb-4" />
-            <h2 className={`text-3xl font-bold ${themeClasses.text} mb-2`}>
-              AI Study Plan Generator
-            </h2>
-            <p className={themeClasses.textSecondary}>
-              Create your personalized study plan with AI assistance
-            </p>
-          </div>
-
           {/* Form content */}
           <div className="space-y-6">
             {/* Weak Topics Section */}
@@ -875,8 +866,8 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                   weakTopics.length > 0 &&
                   preferredTimeSlots.length > 0 &&
                   !isGenerating
-                    ? "bg-purple-600 hover:bg-purple-700 text-white shadow-sm hover:shadow-md"
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                    ? themeClasses.button
+                    : themeClasses.buttonDisabled
                 }`}
               >
                 {isGenerating ? (
@@ -894,7 +885,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
               <button
                 onClick={loadMostRecentPlan}
-                className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                className={`px-6 py-3 ${themeClasses.buttonSecondary} flex items-center gap-2`}
               >
                 <Calendar className="w-4 h-4" />
                 Show History
@@ -907,7 +898,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto" style={{ marginTop: "6rem" }}>
       {/* Header with Progress */}
       <div className={`${themeClasses.container} p-6 mb-6`}>
         <div className="flex items-center justify-between mb-6">
@@ -925,11 +916,13 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="text-right">
+            <div className={`text-right`}>
               <div className="text-3xl font-bold text-purple-600 mb-1">
                 {getProgressPercentage()}%
               </div>
-              <div className="text-sm text-gray-600">Weekly Progress</div>
+              <div className={`text-sm ${themeClasses.textSecondary}`}>
+                Weekly Progress
+              </div>
             </div>
 
             {/* Delete Plan Button */}
@@ -944,7 +937,11 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+        <div
+          className={`w-full ${
+            theme === "light" ? "bg-gray-200" : "bg-secondary-700"
+          } rounded-full h-3 mb-4`}
+        >
           <div
             className="bg-purple-600 h-3 rounded-full transition-all duration-300"
             style={{ width: `${getProgressPercentage()}%` }}
@@ -955,20 +952,20 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
         <div className="flex gap-6 text-sm">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-green-500" />
-            <span className="text-gray-700">
+            <span className={themeClasses.textSecondary}>
               {currentPlan.tasks?.filter((t) => t.completed).length || 0}{" "}
               completed
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-gray-500" />
-            <span className="text-gray-700">
+            <span className={themeClasses.textSecondary}>
               {currentPlan.tasks?.length || 0} total tasks
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Trophy className="w-4 h-4 text-yellow-500" />
-            <span className="text-gray-700">
+            <span className={themeClasses.textSecondary}>
               {currentPlan.badges?.length || 0} badges earned
             </span>
           </div>
@@ -980,16 +977,32 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
         {/* Study Plan Area - 3/4 width */}
         <div className="col-span-3">
           {/* Calendar Grid - Notion Style */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-0 overflow-visible">
-            <div className="grid grid-cols-6 border-b border-gray-200">
+          <div
+            className={`${themeClasses.card} rounded-lg shadow-sm p-0 overflow-visible`}
+          >
+            <div
+              className={`grid grid-cols-6 border-b ${
+                theme === "light" ? "border-gray-200" : "border-secondary-700"
+              }`}
+            >
               {/* Header row */}
-              <div className="p-4 bg-gray-50 border-r border-gray-200 font-medium text-gray-700">
+              <div
+                className={`p-4 ${
+                  theme === "light"
+                    ? "bg-gray-50 border-r border-gray-200"
+                    : "bg-[#140D13] border-r border-secondary-700"
+                } font-medium ${themeClasses.text}`}
+              >
                 Time
               </div>
               {days.map((day) => (
                 <div
                   key={day}
-                  className="p-4 bg-gray-50 border-r border-gray-200 font-medium text-gray-700 text-center"
+                  className={`p-4 ${
+                    theme === "light"
+                      ? "bg-gray-50 border-r border-gray-200"
+                      : "bg-[#140D13] border-r border-secondary-700"
+                  } font-medium ${themeClasses.text} text-center`}
                 >
                   {day}
                 </div>
@@ -1000,10 +1013,18 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
             {timeSlots.map((timeSlot) => (
               <div
                 key={timeSlot.time}
-                className="grid grid-cols-6 border-b border-gray-200"
+                className={`grid grid-cols-6 border-b ${
+                  theme === "light" ? "border-gray-200" : "border-secondary-700"
+                }`}
               >
                 {/* Time slot header */}
-                <div className="p-4 bg-gray-50 border-r border-gray-200 font-medium text-gray-700 flex items-center">
+                <div
+                  className={`p-4 ${
+                    theme === "light"
+                      ? "bg-gray-50 border-r border-gray-200"
+                      : "bg-[#140D13] border-r border-secondary-700"
+                  } font-medium ${themeClasses.text} flex items-center`}
+                >
                   {timeSlot.time} ({timeSlot.duration} min)
                 </div>
 
@@ -1015,10 +1036,16 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
                   return (
                     <div
                       key={`${day}-${timeSlot}`}
-                      className="p-3 border-r border-gray-200 min-h-[120px] relative bg-white"
+                      className={`p-3 border-r ${
+                        theme === "light"
+                          ? "border-gray-200 bg-white"
+                          : "border-secondary-700 bg-[#140D13]"
+                      } min-h-[120px] relative`}
                       style={{
                         backgroundImage: `
-                          radial-gradient(circle at 1px 1px, #e5e7eb 1px, transparent 0)
+                          radial-gradient(circle at 1px 1px, ${
+                            theme === "light" ? "#e5e7eb" : "#374151"
+                          } 1px, transparent 0)
                         `,
                         backgroundSize: "20px 20px",
                       }}
@@ -1142,7 +1169,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
           <div className="mt-6 text-center">
             <button
               onClick={() => setShowPlanForm(true)}
-              className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 rounded-lg font-medium transition-all duration-200"
+              className={`px-6 py-3 ${themeClasses.buttonSecondary}`}
             >
               Generate New Plan
             </button>
@@ -1151,10 +1178,10 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
         {/* Study Plan History - 1/4 width */}
         <div className="col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className={`${themeClasses.card} rounded-lg shadow-sm p-4`}>
             <div className="flex items-center gap-2 mb-4">
               <Calendar className="w-5 h-5 text-purple-600" />
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className={`text-lg font-bold ${themeClasses.text}`}>
                 Study Plan History
               </h3>
             </div>
