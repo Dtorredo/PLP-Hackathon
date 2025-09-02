@@ -94,7 +94,7 @@ export function CourseSidebar({
 
   return (
     <div
-      className={`w-80 ${themeClasses.container} p-4 overflow-y-auto rounded-xl shadow-lg sidebar-scrollbar -ml-16`}
+      className={`w-full lg:w-80 ${themeClasses.container} p-4 overflow-y-auto rounded-xl shadow-lg sidebar-scrollbar`}
     >
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">

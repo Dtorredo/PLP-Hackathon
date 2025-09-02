@@ -5,7 +5,6 @@
 @layer base {
   html,
   body {
-    overflow: hidden;
     height: 100%;
   }
 
@@ -96,6 +95,47 @@
   /* Custom scrollbar for sidebar */
   .sidebar-scrollbar::-webkit-scrollbar {
     width: 6px;
+  }
+
+  /* Chat page specific scroll control */
+  .chat-page-container {
+    overflow: hidden;
+  }
+
+  .chat-page-container .chat-area {
+    overflow-y: auto;
+  }
+
+  /* Chat sidebar - prevent movement during page transitions */
+  .chat-sidebar-fixed {
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Inline code styling - prevent full-width blocks */
+  .inline-code-compact {
+    display: inline !important;
+    width: auto !important;
+    max-width: fit-content !important;
+    word-break: keep-all !important;
+    white-space: nowrap !important;
+  }
+
+  /* Force inline code to be small and compact */
+  .chat-message code:not(pre code) {
+    display: inline !important;
+    width: auto !important;
+    max-width: fit-content !important;
+    font-size: 0.875rem !important;
+    padding: 0.125rem 0.25rem !important;
+    margin: 0 !important;
+    border-radius: 0.25rem !important;
+    background-color: rgba(139, 92, 246, 0.1) !important;
+    color: rgb(139, 92, 246) !important;
+    font-family: "Courier New", monospace !important;
+    line-height: 1 !important;
+    vertical-align: baseline !important;
   }
 
   .sidebar-scrollbar::-webkit-scrollbar-track {

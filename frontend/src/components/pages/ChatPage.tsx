@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Send,
-  Search,
-  User as UserIcon,
-} from "lucide-react";
+import { Send, Search, User as UserIcon } from "lucide-react";
 import type { User, ChatMessage } from "../../lib/types";
 import { db } from "../../lib/firebase";
 import {
@@ -16,11 +12,13 @@ import {
   getDocs,
   query,
   orderBy,
+  limit,
 } from "firebase/firestore";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTheme } from "../../lib/theme.tsx";
+import { usePersistentState } from "../../lib/pageState.tsx";
 
 interface ChatPageProps {
   user: User;
@@ -28,20 +26,76 @@ interface ChatPageProps {
 
 export function ChatPage({ user }: ChatPageProps) {
   const { theme } = useTheme();
+
+  // Use persistent state for chat history
+  const [chatHistory, setChatHistory] = usePersistentState<
+    Array<{
+      id: string;
+      createdAt: Date;
+      firstMessage: string;
+      allMessages: string;
+      [key: string]: unknown;
+    }>
+  >("chat", "chatHistory", []);
+
+  // Keep non-persistent state for current session
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [chatHistory, setChatHistory] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchChatHistory = async () => {
       const sessionsRef = collection(db, "users", user.id, "chatSessions");
       const q = query(sessionsRef, orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Fetch the first message for each session to display as preview
+      const history = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const sessionData = doc.data();
+          const messagesRef = collection(
+            db,
+            "users",
+            user.id,
+            "chatSessions",
+            doc.id,
+            "messages"
+          );
+          const messagesQuery = query(
+            messagesRef,
+            orderBy("ts", "asc"),
+            limit(3)
+          );
+          const messagesSnapshot = await getDocs(messagesQuery);
+
+          let firstMessage = "";
+          let allMessages = "";
+          if (!messagesSnapshot.empty) {
+            const firstMsg = messagesSnapshot.docs[0].data();
+            firstMessage = firstMsg.content || "";
+
+            // Collect all messages for better search
+            messagesSnapshot.docs.forEach((doc) => {
+              const msgData = doc.data();
+              allMessages += (msgData.content || "") + " ";
+            });
+          }
+
+          return {
+            id: doc.id,
+            createdAt: sessionData.createdAt?.toDate() || new Date(),
+            firstMessage:
+              firstMessage.substring(0, 50) +
+              (firstMessage.length > 50 ? "..." : ""),
+            allMessages: allMessages.trim(),
+            ...sessionData,
+          };
+        })
+      );
+
       setChatHistory(history);
     };
 
@@ -51,16 +105,35 @@ export function ChatPage({ user }: ChatPageProps) {
   }, [user.id]);
 
   // Filter history items based on search query
-  const filteredHistoryItems = chatHistory.filter(
-    (item) =>
-      searchQuery === "" ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredHistoryItems = chatHistory.filter((item) => {
+    if (searchQuery === "") return true;
+
+    const query = searchQuery.toLowerCase();
+
+    // Search in all messages content (most comprehensive)
+    if (item.allMessages.toLowerCase().includes(query)) return true;
+
+    // Search in first message content
+    if (item.firstMessage.toLowerCase().includes(query)) return true;
+
+    // Search in session ID (fallback)
+    if (item.id.toLowerCase().includes(query)) return true;
+
+    // Search in date (if user searches for dates)
+    if (item.createdAt) {
+      const dateStr = new Date(item.createdAt)
+        .toLocaleDateString()
+        .toLowerCase();
+      if (dateStr.includes(query)) return true;
+    }
+
+    return false;
+  });
 
   // Group filtered items by section
   const groupedHistory = {
     "Chat History": filteredHistoryItems,
-  }
+  };
 
   // Theme-aware classes
   const getThemeClasses = () => {
@@ -116,10 +189,6 @@ export function ChatPage({ user }: ChatPageProps) {
         theme === "light"
           ? "bg-[#F2DEF6] border border-gray-200"
           : "bg-secondary-900 border border-secondary-700",
-      inlineCode:
-        theme === "light"
-          ? "bg-[#F2DEF6] px-1 py-0.5 rounded text-sm"
-          : "bg-secondary-700 px-1 py-0.5 rounded text-sm",
 
       // Markdown elements
       heading: theme === "light" ? "text-[#492C61]" : "text-white",
@@ -156,7 +225,6 @@ export function ChatPage({ user }: ChatPageProps) {
         role: "assistant",
         content: `Hi ${user.name}! I'm your AI Study Buddy. What would you like to learn about today?`,
         timestamp: new Date(),
-        confidence: 0.95,
       };
       setMessages([welcomeMessage]);
       setIsInitialized(true);
@@ -221,7 +289,18 @@ export function ChatPage({ user }: ChatPageProps) {
       if (response.ok) {
         const data = await response.json();
         let content = data.answer;
-        content = content.replace(/\n(?!\n)/g, ' ');
+
+        // Clean up the content formatting
+        content = content
+          // Remove excessive line breaks but preserve intentional formatting
+          .replace(/\n{3,}/g, "\n\n")
+          // Clean up spaces around line breaks
+          .replace(/\s*\n\s*/g, "\n")
+          // Fix inline code formatting - ensure single words don't break lines
+          .replace(/`(\w+)`/g, "`$1`")
+          // Remove trailing whitespace
+          .trim();
+
         const aiResponse: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
@@ -268,11 +347,63 @@ export function ChatPage({ user }: ChatPageProps) {
     }
   };
 
+  const handleHistorySelect = async (sessionId: string) => {
+    try {
+      setIsLoading(true);
+
+      // Load messages from the selected session
+      const messagesRef = collection(
+        db,
+        "users",
+        user.id,
+        "chatSessions",
+        sessionId,
+        "messages"
+      );
+      const q = query(messagesRef, orderBy("ts", "asc"));
+      const querySnapshot = await getDocs(q);
+
+      const loadedMessages: ChatMessage[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        loadedMessages.push({
+          id: doc.id,
+          role: data.role,
+          content: data.content,
+          timestamp: data.ts?.toDate() || new Date(),
+          confidence: data.confidence || 0.85,
+        });
+      });
+
+      setMessages(loadedMessages);
+      setIsInitialized(true);
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startNewChat = () => {
+    const welcomeMessage: ChatMessage = {
+      id: "welcome",
+      role: "assistant",
+      content: `Hi ${user.name}! I'm your AI Study Buddy. What would you like to learn about today?`,
+      timestamp: new Date(),
+      confidence: 0.95,
+    };
+    setMessages([welcomeMessage]);
+    setIsInitialized(true);
+  };
+
   return (
-    <div className={`${themeClasses.mainContainer} h-screen flex pt-24`}>
-      {/* Sidebar - Floating container with margins */}
+    <div
+      className={`${themeClasses.mainContainer} h-screen flex flex-col md:flex-row pt-24 chat-page-container relative`}
+    >
+      {/* Floating Sidebar - Fixed position, doesn't move */}
       <div
-        className={`${themeClasses.sidebar} w-80 p-4 rounded-xl shadow-lg sidebar-scrollbar -ml-16 flex flex-col h-full`}
+        className={`${themeClasses.sidebar} hidden md:flex w-80 p-4 rounded-xl shadow-lg sidebar-scrollbar flex-col h-[calc(100vh-10rem)] fixed left-24 top-24 z-50 chat-sidebar-fixed`}
+        style={{ transform: "none !important", transition: "none !important" }}
       >
         {/* Search Bar */}
         <div className="p-4 pt-6">
@@ -288,26 +419,48 @@ export function ChatPage({ user }: ChatPageProps) {
           </div>
         </div>
 
+        {/* New Chat Button */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={startNewChat}
+            className={`${themeClasses.newChatButton} w-full px-4 py-3 rounded-lg font-medium transition-colors`}
+          >
+            + New Chat
+          </button>
+        </div>
+
         {/* Chat History */}
         <div className="flex-1 px-4 space-y-6 overflow-y-auto">
           {Object.entries(groupedHistory).map(([section, items]) => (
             <div key={section}>
-              <h3
-                className={`text-xs font-semibold ${themeClasses.textSecondary} uppercase tracking-wider mb-3`}
-              >
-                {section}
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3
+                  className={`text-xs font-semibold ${themeClasses.textSecondary} uppercase tracking-wider`}
+                >
+                  {section}
+                </h3>
+                {searchQuery && (
+                  <span className={`text-xs ${themeClasses.textSecondary}`}>
+                    {items.length} result{items.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
               <div className="space-y-1">
                 {items.map((item, index) => (
                   <div
                     key={`${section}-${index}`}
-                    className={`${themeClasses.historyItem} p-3 rounded-lg cursor-pointer`}
-                    onClick={() => console.log(item.id)}
+                    className={`${themeClasses.historyItem} p-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity`}
+                    onClick={() => handleHistorySelect(item.id)}
                   >
                     <p
                       className={`text-sm ${themeClasses.text} font-medium truncate`}
                     >
-                      {item.id}
+                      {item.firstMessage || "New conversation"}
+                    </p>
+                    <p className={`text-xs ${themeClasses.textSecondary} mt-1`}>
+                      {item.createdAt
+                        ? new Date(item.createdAt).toLocaleDateString()
+                        : "Unknown date"}
                     </p>
                   </div>
                 ))}
@@ -342,12 +495,12 @@ export function ChatPage({ user }: ChatPageProps) {
         </div>
       </div>
 
-      {/* Main Chat Area - Full width with proper padding */}
+      {/* Main Chat Area - Adjusted for floating sidebar */}
       <div
-        className={`${themeClasses.chatArea} flex-1 flex flex-col h-full p-6 pl-2`}
+        className={`${themeClasses.chatArea} flex-1 flex flex-col h-full p-2 md:p-6 chat-area md:ml-80`}
       >
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-6 pb-8">
+        <div className="flex-1 overflow-y-auto p-2 md:p-6 pb-8">
           <div className="space-y-4 max-w-4xl mx-auto">
             <AnimatePresence>
               {messages.map((message) => (
@@ -366,7 +519,7 @@ export function ChatPage({ user }: ChatPageProps) {
                         : themeClasses.aiMessage
                     }`}
                   >
-                    <div className="max-w-none">
+                    <div className="max-w-none chat-message">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -376,10 +529,8 @@ export function ChatPage({ user }: ChatPageProps) {
                             className,
                             children,
                             ...props
-                          }: {
+                          }: React.ComponentProps<"code"> & {
                             inline?: boolean;
-                            className?: string;
-                            children: React.ReactNode;
                           }) => {
                             return !inline ? (
                               <pre
@@ -390,12 +541,7 @@ export function ChatPage({ user }: ChatPageProps) {
                                 </code>
                               </pre>
                             ) : (
-                              <code
-                                className={`${themeClasses.inlineCode}`}
-                                {...props}
-                              >
-                                {children}
-                              </code>
+                              <code {...props}>{children}</code>
                             );
                           },
                           // Customize headings
@@ -436,7 +582,7 @@ export function ChatPage({ user }: ChatPageProps) {
                               {children}
                             </li>
                           ),
-                          
+
                           // Customize strong text
                           strong: ({ children }) => (
                             <strong
@@ -450,6 +596,20 @@ export function ChatPage({ user }: ChatPageProps) {
                             <em className={`italic ${themeClasses.emphasis}`}>
                               {children}
                             </em>
+                          ),
+                          // Customize paragraphs for better spacing
+                          p: ({ children }) => (
+                            <p
+                              className={`${themeClasses.paragraph} mb-3 leading-relaxed`}
+                            >
+                              {children}
+                            </p>
+                          ),
+                          // Customize blockquotes
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-4 border-gray-300 pl-4 italic my-3">
+                              {children}
+                            </blockquote>
                           ),
                         }}
                       >
@@ -475,7 +635,7 @@ export function ChatPage({ user }: ChatPageProps) {
 
         {/* Floating Input Area at Bottom */}
         <div
-          className={`${themeClasses.inputContainer} fixed bottom-6 left-1/2 transform -translate-x-1/2 z-20 rounded-xl shadow-lg`}
+          className={`${themeClasses.inputContainer} fixed bottom-6 left-1/2 transform -translate-x-1/2 z-20 rounded-xl shadow-lg md:left-[calc(50%+10rem)]`}
           style={{ width: "max-content", maxWidth: "48rem" }}
         >
           <div className="max-w-3xl mx-auto flex gap-3 p-3">

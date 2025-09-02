@@ -52,7 +52,7 @@ export function ProfilePage({ user }: ProfilePageProps) {
       : new Date(user.lastActive);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pt-8">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Profile Header */}
       <div className={`${themeClasses.container} p-6`}>
         <div className="flex items-center gap-6">

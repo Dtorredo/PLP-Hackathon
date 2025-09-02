@@ -1,5 +1,3 @@
-import React from "react";
-
 interface LogOutIconProps {
   className?: string;
   size?: number;

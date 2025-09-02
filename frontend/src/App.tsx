@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Trophy, TrendingUp, Sun, Moon } from "lucide-react";
-import { PandaIcon } from "./components/ui/PandaIcon";
+import { Sun, Moon } from "lucide-react";
 import { LogOutIcon } from "./components/ui/LogOutIcon";
 import { LandingPage } from "./components/pages/LandingPage";
 import { ChatPage } from "./components/pages/ChatPage";
@@ -18,6 +17,7 @@ import { SubjectsPage } from "./components/pages/SubjectsPage";
 import type { AppState, User } from "./lib/types";
 import { LoadingSpinner } from "./components/ui/LoadingSpinner";
 import { ThemeProvider, useTheme } from "./lib/theme.tsx";
+import { PageStateProvider } from "./lib/pageState.tsx";
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
@@ -167,7 +167,7 @@ function App() {
   }
 
   // New user subjects selection
-  if (appState.user.subjects.length === 0) {
+  if (appState.user && appState.user.subjects.length === 0) {
     return (
       <SubjectsPage user={appState.user} onComplete={handleSubjectsComplete} />
     );
@@ -176,12 +176,15 @@ function App() {
   // Main application
   return (
     <ThemeProvider>
-      <MainApp
-        appState={appState}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        handleLogout={handleLogout}
-      />
+      <PageStateProvider>
+        <MainApp
+          appState={appState}
+          setAppState={setAppState}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          handleLogout={handleLogout}
+        />
+      </PageStateProvider>
     </ThemeProvider>
   );
 }
@@ -190,11 +193,13 @@ export default App;
 
 function MainApp({
   appState,
+  setAppState,
   currentPage,
   setCurrentPage,
   handleLogout,
 }: {
   appState: AppState;
+  setAppState: (state: AppState | ((prev: AppState) => AppState)) => void;
   currentPage: string;
   setCurrentPage: (page: string) => void;
   handleLogout: () => void;
@@ -232,13 +237,13 @@ function MainApp({
   return (
     <div className={`min-h-screen ${appThemeClasses.background}`}>
       {/* Small navbar with theme toggle and logout at top right */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-16 md:top-4 right-4 z-50">
         <div
-          className={`flex items-center gap-2 ${appThemeClasses.nav} rounded-lg px-3 py-2 shadow-lg`}
+          className={`flex items-center gap-1 md:gap-2 ${appThemeClasses.nav} rounded-lg px-2 md:px-3 py-1 md:py-2 shadow-lg`}
         >
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-md transition-colors ${
+            className={`p-1 md:p-2 rounded-md transition-colors ${
               theme === "light"
                 ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                 : "text-gray-300 hover:text-white hover:bg-secondary-700"
@@ -246,29 +251,29 @@ function MainApp({
             title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
           >
             {theme === "light" ? (
-              <Moon className="w-5 h-5" />
+              <Moon className="w-4 h-4 md:w-5 md:h-5" />
             ) : (
-              <Sun className="w-5 h-5" />
+              <Sun className="w-4 h-4 md:w-5 md:h-5" />
             )}
           </button>
           <button
             onClick={handleLogout}
-            className={`p-2 rounded-md transition-colors ${
+            className={`p-1 md:p-2 rounded-md transition-colors ${
               theme === "light"
                 ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                 : "text-gray-300 hover:text-white hover:bg-secondary-700"
             }`}
             title="Logout"
           >
-            <LogOutIcon className="w-5 h-5" />
+            <LogOutIcon className="w-4 h-4 md:w-5 md:h-5" />
           </button>
         </div>
       </div>
 
-      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-40 px-4 py-2">
+      <nav className="fixed top-4 left-4 md:left-1/2 md:transform md:-translate-x-1/2 z-40 px-2 md:px-4 py-2">
         <div className="max-w-2xl mx-auto">
           <div
-            className={`flex justify-center space-x-1 ${appThemeClasses.nav} rounded-xl px-4 py-2 shadow-lg`}
+            className={`flex justify-start md:justify-center space-x-1 ${appThemeClasses.nav} rounded-xl px-2 md:px-4 py-2 shadow-lg`}
           >
             {[
               { id: "chat", label: "Ask & Learn" },
@@ -280,7 +285,7 @@ function MainApp({
               <button
                 key={item.id}
                 onClick={() => setCurrentPage(item.id)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                className={`px-2 md:px-4 py-2 rounded-lg font-medium text-xs md:text-sm transition-all duration-200 ${
                   currentPage === item.id
                     ? appThemeClasses.navActive
                     : appThemeClasses.navInactive
@@ -293,7 +298,7 @@ function MainApp({
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pt-20">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 sm:px-6 lg:px-8 py-4 pt-24 pb-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
@@ -301,10 +306,12 @@ function MainApp({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="min-h-[600px]" // Ensure minimum height to prevent layout shifts
+            className="w-full"
           >
-            {currentPage === "chat" && <ChatPage user={appState.user} />}
-            {currentPage === "study" && (
+            {currentPage === "chat" && appState.user && (
+              <ChatPage user={appState.user} />
+            )}
+            {currentPage === "study" && appState.user && (
               <StudyPlanPage
                 user={appState.user}
                 onStateChange={(state) => {
@@ -313,11 +320,15 @@ function MainApp({
                 }}
               />
             )}
-            {currentPage === "flashcards" && (
+            {currentPage === "flashcards" && appState.user && (
               <FlashcardsPage user={appState.user} />
             )}
-            {currentPage === "pricing" && <PricingPage user={appState.user} />}
-            {currentPage === "profile" && <ProfilePage user={appState.user} />}
+            {currentPage === "pricing" && appState.user && (
+              <PricingPage user={appState.user} />
+            )}
+            {currentPage === "profile" && appState.user && (
+              <ProfilePage user={appState.user} />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>

@@ -16,6 +16,7 @@ import type { User, AppState } from "../../lib/types";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { useTheme } from "../../lib/theme.tsx";
 import { PandaIcon } from "../ui/PandaIcon";
+import { usePersistentState } from "../../lib/pageState.tsx";
 
 interface StudyPlanTask {
   id: string;
@@ -70,24 +71,58 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   console.log("StudyPlanPage mounted with user:", user);
   const { theme } = useTheme();
 
-  const [currentPlan, setCurrentPlan] = useState<StudyPlan | null>(null);
-  const [weakTopics, setWeakTopics] = useState<string[]>([]);
-  const [newTopic, setNewTopic] = useState("");
-  const [dailyHours, setDailyHours] = useState(4);
-  const [preferredTimeSlots, setPreferredTimeSlots] = useState<TimeSlot[]>([]);
-  const [newTimeSlot, setNewTimeSlot] = useState("");
-  const [newTimeSlotDuration, setNewTimeSlotDuration] = useState(30);
+  // Use persistent state for key variables
+  const [currentPlan, setCurrentPlan] = usePersistentState<StudyPlan | null>(
+    "study",
+    "currentPlan",
+    null
+  );
+  const [weakTopics, setWeakTopics] = usePersistentState<string[]>(
+    "study",
+    "weakTopics",
+    []
+  );
+  const [newTopic, setNewTopic] = usePersistentState<string>(
+    "study",
+    "newTopic",
+    ""
+  );
+  const [dailyHours, setDailyHours] = usePersistentState<number>(
+    "study",
+    "dailyHours",
+    4
+  );
+  const [preferredTimeSlots, setPreferredTimeSlots] = usePersistentState<
+    TimeSlot[]
+  >("study", "preferredTimeSlots", []);
+  const [newTimeSlot, setNewTimeSlot] = usePersistentState<string>(
+    "study",
+    "newTimeSlot",
+    ""
+  );
+  const [newTimeSlotDuration, setNewTimeSlotDuration] =
+    usePersistentState<number>("study", "newTimeSlotDuration", 30);
+  const [showPlanForm, setShowPlanForm] = usePersistentState<boolean>(
+    "study",
+    "showPlanForm",
+    false
+  );
+  const [selectedPlanId, setSelectedPlanId] = usePersistentState<string | null>(
+    "study",
+    "selectedPlanId",
+    null
+  );
+
+  // Keep non-persistent state for UI-only variables
   const [timeSlotError, setTimeSlotError] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showPlanForm, setShowPlanForm] = useState(false);
   const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [studyPlanHistory, setStudyPlanHistory] = useState<
     StudyPlanHistoryItem[]
   >([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   // Theme-aware class helpers
   const getThemeClasses = () => {
@@ -271,13 +306,13 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
       weakTopics.length < 5 &&
       !weakTopics.includes(newTopic.trim())
     ) {
-      setWeakTopics((prev) => [...prev, newTopic.trim()]);
+      setWeakTopics([...weakTopics, newTopic.trim()]);
       setNewTopic("");
     }
   };
 
   const removeTopic = (topicToRemove: string) => {
-    setWeakTopics((prev) => prev.filter((topic) => topic !== topicToRemove));
+    setWeakTopics(weakTopics.filter((topic) => topic !== topicToRemove));
   };
 
   const addTimeSlot = () => {
@@ -312,8 +347,8 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
       return;
     }
 
-    setPreferredTimeSlots((prev) => [
-      ...prev,
+    setPreferredTimeSlots([
+      ...preferredTimeSlots,
       { time: timeSlot, duration: newTimeSlotDuration },
     ]);
     setNewTimeSlot("");
@@ -321,8 +356,8 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   };
 
   const removeTimeSlot = (timeSlotToRemove: string) => {
-    setPreferredTimeSlots((prev) =>
-      prev.filter((slot) => slot.time !== timeSlotToRemove)
+    setPreferredTimeSlots(
+      preferredTimeSlots.filter((slot) => slot.time !== timeSlotToRemove)
     );
   };
 
@@ -898,18 +933,18 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto" style={{ marginTop: "6rem" }}>
+    <div className="max-w-7xl mx-auto">
       {/* Header with Progress */}
       <div className={`${themeClasses.container} p-6 mb-6`}>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <div>
             <h2
-              className={`text-2xl font-bold ${themeClasses.text} mb-2 flex items-center gap-2`}
+              className={`text-xl md:text-2xl font-bold ${themeClasses.text} mb-2 flex items-center gap-2`}
             >
-              <Calendar className="w-6 h-6 text-purple-600" />
+              <Calendar className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
               Your AI Study Plan
             </h2>
-            <p className={themeClasses.textSecondary}>
+            <p className={`text-sm ${themeClasses.textSecondary}`}>
               {currentPlan.dailyHours} hours daily •{" "}
               {currentPlan.weakTopics?.join(", ") || "No topics specified"}
             </p>
@@ -917,10 +952,12 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
           <div className="flex items-center gap-4">
             <div className={`text-right`}>
-              <div className="text-3xl font-bold text-purple-600 mb-1">
+              <div className="text-2xl md:text-3xl font-bold text-purple-600 mb-1">
                 {getProgressPercentage()}%
               </div>
-              <div className={`text-sm ${themeClasses.textSecondary}`}>
+              <div
+                className={`text-xs md:text-sm ${themeClasses.textSecondary}`}
+              >
                 Weekly Progress
               </div>
             </div>
@@ -931,7 +968,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
               className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
               title="Delete Study Plan"
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
         </div>
@@ -949,7 +986,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
         </div>
 
         {/* Stats */}
-        <div className="flex gap-6 text-sm">
+        <div className="flex flex-wrap gap-3 md:gap-6 text-xs md:text-sm">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-green-500" />
             <span className={themeClasses.textSecondary}>
@@ -973,9 +1010,9 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-4 gap-6">
-        {/* Study Plan Area - 3/4 width */}
-        <div className="col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+        {/* Study Plan Area - Full width on mobile, 3/4 on desktop */}
+        <div className="lg:col-span-3">
           {/* Calendar Grid - Notion Style */}
           <div
             className={`${themeClasses.card} rounded-lg shadow-sm p-0 overflow-visible`}
@@ -1176,8 +1213,8 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
           </div>
         </div>
 
-        {/* Study Plan History - 1/4 width */}
-        <div className="col-span-1">
+        {/* Study Plan History - Full width on mobile, 1/4 on desktop */}
+        <div className="lg:col-span-1">
           <div className={`${themeClasses.card} rounded-lg shadow-sm p-4`}>
             <div className="flex items-center gap-2 mb-4">
               <Calendar className="w-5 h-5 text-purple-600" />

@@ -164,14 +164,14 @@ export function PricingPage({ user }: PricingPageProps) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4">
       {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className={`text-4xl font-bold ${themeClasses.text} mb-4`}>
+      <div className="text-center mb-8 md:mb-12">
+        <h1 className={`text-2xl md:text-4xl font-bold ${themeClasses.text} mb-4`}>
           Choose Your Learning Plan
         </h1>
         <p
-          className={`text-xl ${themeClasses.textSecondary} max-w-2xl mx-auto`}
+          className={`text-base md:text-xl ${themeClasses.textSecondary} max-w-2xl mx-auto`}
         >
           Unlock your full learning potential with our premium features designed
           to accelerate your academic success.
@@ -299,7 +299,7 @@ export function PricingPage({ user }: PricingPageProps) {
         >
           Frequently Asked Questions
         </h2>
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <div className={`${themeClasses.faqItem} rounded-lg p-6`}>
             <h3 className={`text-lg font-semibold ${themeClasses.text} mb-3`}>
               Can I cancel anytime?

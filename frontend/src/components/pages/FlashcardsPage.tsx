@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useTheme } from "../../lib/theme.tsx";
+import { usePersistentState } from "../../lib/pageState.tsx";
 
 interface FlashcardsPageProps {
   user: User;
@@ -22,18 +23,20 @@ interface FlashcardsPageProps {
 
 export function FlashcardsPage({ user }: FlashcardsPageProps) {
   const { theme } = useTheme();
+  
+  // Use persistent state for key variables
+  const [selectedTopic, setSelectedTopic] = usePersistentState<string>("flashcards", "selectedTopic", "");
+  const [flashcards, setFlashcards] = usePersistentState<FlashcardData[]>("flashcards", "flashcards", []);
+  const [flashcardHistory, setFlashcardHistory] = usePersistentState<FlashcardHistory[]>("flashcards", "flashcardHistory", []);
+  
+  // Keep non-persistent state for session and loading
   const [sessionId, setSessionId] = useState<string>("");
-  const [selectedTopic, setSelectedTopic] = useState<string>("");
-  const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Debug: Log when flashcards change
   useEffect(() => {
     console.log("Flashcards state updated:", flashcards);
   }, [flashcards]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [flashcardHistory, setFlashcardHistory] = useState<FlashcardHistory[]>(
-    []
-  );
 
   // Theme-aware classes
   const getThemeClasses = () => {
@@ -206,18 +209,22 @@ export function FlashcardsPage({ user }: FlashcardsPageProps) {
   };
 
   return (
-    <div className="flex h-full pt-4">
-      <CourseSidebar
-        onTopicSelect={handleTopicSelect}
-        selectedTopic={selectedTopic}
-        flashcardHistory={flashcardHistory}
-        onHistorySelect={handleHistorySelect}
-      />
+    <div className="flex flex-col lg:flex-row h-full pt-4">
+      {/* Sidebar - Top on mobile, left on desktop */}
+      <div className="lg:w-80 lg:flex-shrink-0">
+        <CourseSidebar
+          onTopicSelect={handleTopicSelect}
+          selectedTopic={selectedTopic}
+          flashcardHistory={flashcardHistory}
+          onHistorySelect={handleHistorySelect}
+        />
+      </div>
 
-      <div className="flex-1 p-6 pl-2">
+      {/* Main content - Below sidebar on mobile, right side on desktop */}
+      <div className="flex-1 p-2 lg:p-6 lg:pl-2">
         <div className="max-w-4xl mx-auto">
           {/* Centered flashcard stack with floating effect */}
-          <div className="flex flex-col justify-center items-center min-h-[500px]">
+          <div className="flex flex-col justify-center items-center min-h-[400px] lg:min-h-[500px]">
             <div className="mb-4 text-center">
               <h2 className={`text-lg font-semibold ${themeClasses.text} mb-1`}>
                 AI-Powered Flashcards
