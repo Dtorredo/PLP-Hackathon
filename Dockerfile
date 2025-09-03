@@ -19,7 +19,12 @@ RUN pnpm install --frozen-lockfile
 # Copy rest of repository
 COPY . .
 
+# Set environment variables for frontend build
+ARG VITE_API_URL=https://plp-hackathon.fly.dev
+ENV VITE_API_URL=$VITE_API_URL
+
 # Debug: show the build arg value (optional)
+RUN echo "VITE_API_URL during build: $VITE_API_URL"
 RUN echo "VITE_FIREBASE_API_KEY during build: $VITE_FIREBASE_API_KEY"
 
 # Build frontend and backend explicitly (use workspace filtering)

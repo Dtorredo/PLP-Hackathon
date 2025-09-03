@@ -2,6 +2,8 @@ app = "plp-hackathon"
 primary_region = "jnb"
 
 [build]
+  [build.args]
+    VITE_API_URL = "https://plp-hackathon.fly.dev"
 
 [env]
   VITE_API_URL = "https://plp-hackathon.fly.dev"
