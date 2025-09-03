@@ -1,110 +1,84 @@
 # AI Study Buddy 🧠
 
-A comprehensive AI-powered study platform that helps students create personalized learning experiences through intelligent flashcards, study plans, and interactive learning tools.
+An intelligent AI-powered study platform that creates personalized learning experiences through smart flashcards, study plans, and interactive chat-based learning.
 
-## 🚀 Features
+## ✨ Key Features
 
 ### 🤖 AI-Powered Learning
 
 - **Smart Flashcard Generation**: Create personalized flashcards for any subject using Google Gemini AI
-- **Intelligent Study Plans**: AI-generated weekly study schedules with topic distribution
-- **Interactive Chat**: Ask questions and get detailed explanations with practice exercises
+- **Intelligent Study Plans**: AI-generated weekly schedules with topic distribution and time management
+- **Interactive Chat Learning**: Real-time chat with AI for explanations, practice exercises, and Q&A
 - **Adaptive Content**: Content adapts to your learning style and progress
 
 ### 📚 Study Tools
 
-- **Flashcard System**: Interactive, draggable flashcards with markdown support
-- **Study Plan Calendar**: Notion-style calendar grid with daily task tracking
-- **Progress Tracking**: Monitor your learning progress and achievements
-- **Flashcard History**: Save and revisit previously generated flashcards
+- **Interactive Flashcards**: Draggable cards with markdown support and smooth animations
+- **Study Plan Calendar**: Notion-style calendar with daily task tracking and progress visualization
+- **Real-Time Chat History**: Persistent chat sessions with search functionality
+- **Progress Tracking**: Monitor learning progress, streaks, and achievements
 
 ### 🎯 Personalization
 
-- **Subject Selection**: Choose your study subjects and focus areas
+- **Subject Selection**: Choose study subjects and focus areas
 - **Time Management**: Set preferred study time slots for optimal scheduling
-- **Achievement System**: Earn badges for consistent study habits
-- **User Profiles**: Track points, streaks, and learning history
+- **Session Management**: Automatic session timeout and manual chat reset
+- **User Profiles**: Track points, streaks, and comprehensive learning history
 
 ### 🎨 Modern UI/UX
 
-- **Dark Theme**: Beautiful dark interface with pink accents
-- **Responsive Design**: Works seamlessly on desktop and mobile
+- **Dark/Light Theme**: Beautiful interface with theme toggle
+- **Responsive Design**: Optimized for desktop and mobile devices
 - **Smooth Animations**: Framer Motion powered interactions
-- **Glassmorphism Effects**: Modern blur effects and gradients
+- **Floating Sidebar**: Fixed chat history sidebar that doesn't interfere with scrolling
 
 ## 🛠️ Tech Stack
 
 ### Frontend
 
-- **React 18** with TypeScript
-- **Tailwind CSS** for styling
-- **Framer Motion** for animations
-- **Firebase** for authentication and data storage
-- **React Markdown** for content rendering
+- **React 18** with TypeScript for type safety
+- **Tailwind CSS** for utility-first styling
+- **Framer Motion** for smooth animations
+- **Firebase** for authentication and Firestore database
+- **React Markdown** for rich content rendering
+- **Vite** for fast development and building
 
 ### Backend
 
-- **Node.js** with Express.js
+- **Node.js** with Express.js framework
 - **TypeScript** for type safety
 - **Google Gemini AI** for intelligent content generation
 - **Redis** for session management and caching
-- **ioredis** for Redis client
+- **ioredis** for Redis client operations
 
-### Package Management
+### Development Tools
 
-- **pnpm** for fast, efficient dependency management
+- **pnpm** for fast, efficient package management
 - **pnpm workspaces** for monorepo structure
-
-## 📦 Project Structure
-
-```
-ai-study-buddy/
-├── frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/       # React components
-│   │   ├── lib/             # Utilities and types
-│   │   └── pages/           # Page components
-│   ├── package.json
-│   └── tailwind.config.js
-├── backend/                  # Node.js backend API
-│   ├── src/
-│   │   ├── ai.service.ts    # AI integration
-│   │   ├── redis.service.ts # Redis operations
-│   │   └── index.ts         # Express server
-│   └── package.json
-├── package.json              # Root package.json
-├── pnpm-workspace.yaml       # pnpm workspace config
-└── dev.sh                    # Development script
-```
+- **ESLint** for code quality
+- **Jest** for testing
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js** (v18 or higher)
-- **pnpm** (v8 or higher)
-- **Redis** server running locally
+- Node.js (v20.19+)
+- pnpm (v8+)
+- Redis server
 
 ### Installation
 
-1. **Clone the repository**
+1. **Clone and install**
 
    ```bash
    git clone <repository-url>
    cd ai-study-buddy
-   ```
-
-2. **Install dependencies**
-
-   ```bash
    pnpm install
    ```
 
-3. **Set up environment variables**
+2. **Environment setup**
 
-   Create `.env` files in both `frontend/` and `backend/` directories:
-
-   **Backend (.env)**
+   **Backend** (`backend/.env`):
 
    ```env
    PORT=3001
@@ -112,7 +86,7 @@ ai-study-buddy/
    REDIS_URL=redis://localhost:6379
    ```
 
-   **Frontend (.env)**
+   **Frontend** (`frontend/.env`):
 
    ```env
    VITE_API_URL=http://localhost:3001
@@ -121,92 +95,96 @@ ai-study-buddy/
    VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
    ```
 
-4. **Start Redis server**
+3. **Start development**
 
    ```bash
+   # Start Redis
    redis-server
-   ```
 
-5. **Start development servers**
-
-   ```bash
-   # Option 1: Use the convenience script
-   ./dev.sh
-
-   # Option 2: Use pnpm workspace commands
+   # Start both frontend and backend
    pnpm dev
    ```
 
-The application will be available at:
+**Access the app:**
 
-- **Frontend**: http://localhost:3000
-- **Backend**: http://localhost:3001
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
 
-## 📋 Available Scripts
+## 📦 Project Structure
 
-### Root Level (pnpm workspace)
-
-```bash
-pnpm dev              # Start both frontend and backend
-pnpm dev:frontend     # Start only frontend
-pnpm dev:backend      # Start only backend
-pnpm build            # Build both projects
-pnpm install:all      # Install all dependencies
+```
+ai-study-buddy/
+├── frontend/                 # React frontend
+│   ├── src/
+│   │   ├── components/       # UI components
+│   │   │   ├── core/        # Core components (CardStack, DraggableContainer)
+│   │   │   ├── features/    # Feature components (Flashcard, CourseSidebar)
+│   │   │   ├── pages/       # Page components (ChatPage, StudyPlanPage)
+│   │   │   └── ui/          # UI components (LoadingSpinner)
+│   │   ├── lib/             # Utilities (auth, firebase, types)
+│   │   └── hooks/           # Custom hooks
+│   └── package.json
+├── backend/                  # Node.js backend
+│   ├── src/
+│   │   ├── ai.service.ts    # AI integration
+│   │   ├── redis.service.ts # Redis operations
+│   │   └── index.ts         # Express server
+│   └── package.json
+├── package.json              # Root workspace
+└── pnpm-workspace.yaml       # Workspace config
 ```
 
-### Frontend
+## 🔧 Key Features Implementation
 
-```bash
-pnpm dev              # Start development server
-pnpm build            # Build for production
-pnpm preview          # Preview production build
-```
+### Real-Time Chat System
 
-### Backend
+- **Immediate History Updates**: Chat sessions appear in history instantly
+- **Session Management**: Automatic session timeout (30 min) and manual reset
+- **Persistent State**: Chat history persists across tab switches
+- **Search Functionality**: Search across all message content and session metadata
 
-```bash
-pnpm dev              # Start development server
-pnpm build            # Build TypeScript
-pnpm start            # Start production server
-```
+### Flashcard System
 
-## 🔧 Development
-
-### Key Features Implementation
-
-#### AI Integration
-
-- **Google Gemini 2.5 Flash**: Fast, efficient AI model for content generation
-- **Smart Prompts**: Structured prompts for consistent, high-quality output
-- **Fallback Systems**: Robust error handling and fallback responses
-
-#### Flashcard System
-
-- **Dynamic Generation**: Create flashcards for any subject or topic
+- **Dynamic Generation**: Create flashcards for any subject/topic
+- **Interactive Cards**: Draggable cards with 3D effects
 - **Markdown Support**: Rich text formatting with code highlighting
-- **Interactive Cards**: Draggable cards with smooth animations
 - **History Management**: Save and load previous flashcard sets
 
-#### Study Plan Generation
+### Study Plan Generation
 
 - **Weekly Scheduling**: 5-day plans with topic distribution
-- **Time Slot Management**: User-defined study time preferences
-- **Progress Tracking**: Visual progress indicators and completion tracking
-- **Flashcard Integration**: Daily flashcard prompts based on study topics
+- **Time Slot Management**: User-defined study preferences
+- **Progress Tracking**: Visual progress indicators
+- **Flashcard Integration**: Daily flashcard prompts
 
-#### User Experience
+### State Management
 
-- **Sticky Navigation**: Header and navbar stay in position while scrolling
-- **Loading States**: Custom SVG animations for better UX
-- **Responsive Design**: Optimized for all screen sizes
-- **Dark Theme**: Consistent dark interface throughout
+- **Persistent State**: Custom `PageStateProvider` for cross-tab persistence
+- **Local Storage**: Automatic state persistence using localStorage
+- **Session Tracking**: Real-time session management with timeout
 
-### Database Schema
+## 🎨 UI/UX Features
 
-#### Firebase Firestore
+### Responsive Design
+
+- **Mobile-First**: Optimized for all screen sizes
+- **Floating Sidebar**: Fixed chat history that doesn't interfere with scrolling
+- **Theme Toggle**: Dark/light theme with smooth transitions
+- **Mobile Navigation**: Left-aligned navbar on mobile to prevent overlap
+
+### Animations & Interactions
+
+- **Smooth Transitions**: Framer Motion powered animations
+- **Loading States**: Custom SVG animations
+- **Drag & Drop**: Interactive flashcard system
+- **Glassmorphism**: Modern blur effects and transparency
+
+## 📊 Database Schema
+
+### Firebase Firestore
 
 ```typescript
-// User Document
+// Users Collection
 {
   id: string
   name: string
@@ -214,103 +192,48 @@ pnpm start            # Start production server
   points: number
   streak: number
   subjects: string[]
-  achievements: Achievement[]
-  flashcardHistory: FlashcardHistory[]
   createdAt: Date
-  lastActive: Date
 }
 
-// Achievement
+// Chat Sessions Collection
 {
   id: string
-  name: string
-  description: string
-  icon: string
-  earnedAt: Date
-  type: 'points' | 'streak'
+  userId: string
+  createdAt: Date
+  messages: ChatMessage[]
 }
 
-// Flashcard History
+// Study Plans Collection
 {
   id: string
-  prompt: string
-  module: string
-  specificArea: string
-  flashcards: Flashcard[]
+  userId: string
+  topics: string[]
+  timeSlots: TimeSlot[]
   createdAt: Date
-  lastViewed: Date
 }
 ```
 
-#### Redis
+### Redis
 
-- **Session Management**: User session data and message history
-- **Study Plan Storage**: Weekly study plans with progress tracking
-- **Caching**: Frequently accessed data for improved performance
-
-## 🎨 UI Components
-
-### Custom Components
-
-- **LoadingSpinner**: Custom SVG animation for loading states
-- **CardStack**: Draggable card stack with 3D effects
-- **Flashcard**: Interactive flashcard with markdown rendering
-- **CourseSidebar**: Flashcard generation and history management
-- **StudyPlanCalendar**: Notion-style calendar grid
-
-### Styling
-
-- **Tailwind CSS**: Utility-first CSS framework
-- **Custom Colors**: Dark theme with pink accents
-- **Glassmorphism**: Modern blur effects and transparency
-- **Responsive Design**: Mobile-first approach
+- Session management and caching
+- Study plan storage
+- Real-time data persistence
 
 ## 🚀 Deployment
 
-### DigitalOcean App Platform
-
-1. Connect your GitHub repository
-2. Configure environment variables
-3. Set build commands:
-   - **Frontend**: `cd frontend && pnpm build`
-   - **Backend**: `cd backend && pnpm build && pnpm start`
-
-### Railway (Alternative)
-
-1. Connect your GitHub repository
-2. Set environment variables
-3. Deploy automatically on push
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-#### Port Conflicts
+### Production Build
 
 ```bash
-# Kill existing processes
-pkill -f "vite\|ts-node-dev" || true
-# Restart services
-pnpm dev
+# Build both frontend and backend
+pnpm build
+
+# Start production servers
+pnpm start
 ```
 
-#### Redis Connection Issues
+### Environment Variables
 
-```bash
-# Check if Redis is running
-redis-cli ping
-# Start Redis if not running
-redis-server
-```
-
-#### pnpm Issues
-
-```bash
-# Clear pnpm cache
-pnpm store prune
-# Reinstall dependencies
-pnpm install
-```
+Ensure all required environment variables are set for production deployment.
 
 ## 🤝 Contributing
 
@@ -322,15 +245,7 @@ pnpm install
 
 ## 📄 License
 
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- **Google Gemini AI** for intelligent content generation
-- **Firebase** for backend services
-- **Tailwind CSS** for styling
-- **Framer Motion** for animations
-- **pnpm** for fast package management
+MIT License - see LICENSE file for details.
 
 ---
 
