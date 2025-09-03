@@ -2,6 +2,9 @@ app = "plp-hackathon"
 primary_region = "jnb"
 
 [build]
+
+[env]
+  VITE_API_URL = "https://plp-hackathon.fly.dev"
   
 [http_service]
   internal_port = 3001

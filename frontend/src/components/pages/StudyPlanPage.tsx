@@ -481,18 +481,22 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
     // Update progress in backend
     try {
-      await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.UPDATE_PLAN_PROGRESS), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          planId: currentPlan.id,
-          taskId,
-          completed: !currentPlan.tasks.find((t) => t.id === taskId)?.completed,
-        }),
-      });
+      await fetch(
+        API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.UPDATE_PLAN_PROGRESS),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            planId: currentPlan.id,
+            taskId,
+            completed: !currentPlan.tasks.find((t) => t.id === taskId)
+              ?.completed,
+          }),
+        }
+      );
     } catch (error) {
       console.error("Error updating progress:", error);
     }

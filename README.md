@@ -265,6 +265,7 @@ The application now uses a centralized API configuration that automatically adap
 #### **Option 1: Deploy Backend to Cloud Platform**
 
 1. **Deploy Backend** (Railway, Render, DigitalOcean, etc.)
+
    ```bash
    # Set environment variables in your cloud platform:
    GOOGLE_AI_API_KEY=your_gemini_api_key
@@ -273,6 +274,7 @@ The application now uses a centralized API configuration that automatically adap
    ```
 
 2. **Update Frontend Environment**
+
    ```env
    # frontend/.env.production
    VITE_API_URL=https://your-backend-url.com
@@ -286,6 +288,7 @@ The application now uses a centralized API configuration that automatically adap
 #### **Option 2: Full-Stack Deployment**
 
 Deploy both frontend and backend together on platforms like:
+
 - **Railway**: Supports full-stack deployments
 - **Render**: Full-stack application support
 - **DigitalOcean App Platform**: Monorepo deployment
@@ -293,6 +296,7 @@ Deploy both frontend and backend together on platforms like:
 ### **Environment Variables**
 
 #### **Backend (.env)**
+
 ```env
 PORT=3001
 GOOGLE_AI_API_KEY=your_gemini_api_key
@@ -301,6 +305,7 @@ UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
 ```
 
 #### **Frontend (.env)**
+
 ```env
 VITE_API_URL=https://your-backend-url.com
 VITE_FIREBASE_API_KEY=your_firebase_api_key
@@ -311,6 +316,7 @@ VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
 ### **Quick Deployment Steps**
 
 1. **Backend Deployment**:
+
    ```bash
    cd backend
    pnpm build
@@ -318,6 +324,7 @@ VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
    ```
 
 2. **Frontend Deployment**:
+
    ```bash
    cd frontend
    pnpm build

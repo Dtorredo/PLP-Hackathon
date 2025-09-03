@@ -28,9 +28,11 @@ export interface UserSubscription {
   currency: string;
 }
 
+import { API_CONFIG } from "./api.ts";
+
 export class PaymentService {
   private static instance: PaymentService;
-  private backendUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  private backendUrl = API_CONFIG.BASE_URL;
 
   private constructor() {}
 
@@ -42,22 +44,29 @@ export class PaymentService {
   }
 
   // Initialize M-Pesa payment
-  async initializePayment(plan: PaymentPlan, phoneNumber: string, userId: string): Promise<PaymentResponse> {
+  async initializePayment(
+    plan: PaymentPlan,
+    phoneNumber: string,
+    userId: string
+  ): Promise<PaymentResponse> {
     try {
       console.log("Initializing M-Pesa payment for plan:", plan);
       console.log("Phone number:", phoneNumber);
 
-      const response = await fetch(`${this.backendUrl}/api/v1/payment/initiate-mpesa`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          plan: plan,
-          phoneNumber: phoneNumber,
-          userId: userId,
-        }),
-      });
+      const response = await fetch(
+        `${this.backendUrl}/api/v1/payment/initiate-mpesa`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            plan: plan,
+            phoneNumber: phoneNumber,
+            userId: userId,
+          }),
+        }
+      );
 
       const data = await response.json();
       console.log("Backend response:", data);

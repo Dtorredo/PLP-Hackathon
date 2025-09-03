@@ -1,14 +1,21 @@
 #!/bin/bash
 
-# AI Study Buddy Deployment Script
-# This script helps deploy the application to production
+# AI Study Buddy Fly.io Deployment Script
+# This script helps deploy the application to Fly.io
 
-echo "🚀 AI Study Buddy Deployment Script"
-echo "=================================="
+echo "🚀 AI Study Buddy Fly.io Deployment Script"
+echo "=========================================="
 
 # Check if we're in the right directory
 if [ ! -f "package.json" ] || [ ! -f "pnpm-workspace.yaml" ]; then
     echo "❌ Error: Please run this script from the project root directory"
+    exit 1
+fi
+
+# Check if flyctl is installed
+if ! command -v flyctl &> /dev/null; then
+    echo "❌ Error: flyctl is not installed. Please install it first:"
+    echo "   curl -L https://fly.io/install.sh | sh"
     exit 1
 fi
 
@@ -35,36 +42,56 @@ cd ..
 
 echo "✅ Build completed successfully!"
 
-# Check environment variables
+# Deploy to Fly.io
 echo ""
-echo "🔧 Environment Variables Check"
-echo "============================="
+echo "🚀 Deploying to Fly.io..."
+echo "========================="
 
-echo "Backend environment variables needed:"
-echo "  - GOOGLE_AI_API_KEY"
-echo "  - UPSTASH_REDIS_REST_URL"
-echo "  - UPSTASH_REDIS_REST_TOKEN"
-echo ""
+# Deploy the application
+flyctl deploy -a plp-hackathon
 
-echo "Frontend environment variables needed:"
-echo "  - VITE_API_URL (your deployed backend URL)"
-echo "  - VITE_FIREBASE_API_KEY"
-echo "  - VITE_FIREBASE_AUTH_DOMAIN"
-echo "  - VITE_FIREBASE_PROJECT_ID"
-echo ""
-
-echo "📋 Deployment Instructions:"
-echo "1. Deploy backend to your chosen platform (Railway, Render, etc.)"
-echo "2. Set the backend environment variables"
-echo "3. Deploy frontend to Vercel/Netlify/etc."
-echo "4. Set VITE_API_URL to your backend URL"
-echo "5. Set Firebase environment variables"
-echo ""
-
-echo "🎯 Quick Commands:"
-echo "  Backend: cd backend && pnpm build"
-echo "  Frontend: cd frontend && pnpm build"
-echo ""
-
-echo "✅ Deployment script completed!"
-echo "Remember to set your environment variables in your deployment platform!"
+if [ $? -eq 0 ]; then
+    echo "✅ Deployment successful!"
+    
+    # Test the deployment
+    echo ""
+    echo "🧪 Testing deployment..."
+    sleep 10
+    
+    echo "Testing backend API..."
+    if curl -f https://plp-hackathon.fly.dev/api/v1/status; then
+        echo "✅ Backend is running!"
+    else
+        echo "❌ Backend test failed"
+    fi
+    
+    echo "Testing frontend..."
+    if curl -f https://plp-hackathon.fly.dev/; then
+        echo "✅ Frontend is running!"
+    else
+        echo "❌ Frontend test failed"
+    fi
+    
+    echo ""
+    echo "🎉 Your application is now live at:"
+    echo "   https://plp-hackathon.fly.dev"
+    echo ""
+    echo "📋 Next Steps:"
+    echo "1. Set your environment variables in Fly.io:"
+    echo "   flyctl secrets set GOOGLE_AI_API_KEY=your_key"
+    echo "   flyctl secrets set UPSTASH_REDIS_REST_URL=your_url"
+    echo "   flyctl secrets set UPSTASH_REDIS_REST_TOKEN=your_token"
+    echo ""
+    echo "2. Update your frontend environment variables:"
+    echo "   VITE_API_URL=https://plp-hackathon.fly.dev"
+    echo "   VITE_FIREBASE_API_KEY=your_firebase_key"
+    echo "   VITE_FIREBASE_AUTH_DOMAIN=your_firebase_domain"
+    echo "   VITE_FIREBASE_PROJECT_ID=your_firebase_project"
+    echo ""
+    echo "3. Redeploy if you updated environment variables:"
+    echo "   flyctl deploy -a plp-hackathon"
+    
+else
+    echo "❌ Deployment failed!"
+    exit 1
+fi
