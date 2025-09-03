@@ -16,6 +16,7 @@ import {
 import { db } from "../../lib/firebase";
 import { useTheme } from "../../lib/theme.tsx";
 import { usePersistentState } from "../../lib/pageState.tsx";
+import { API_CONFIG } from "../../lib/api.ts";
 
 interface FlashcardsPageProps {
   user: User;
@@ -93,9 +94,7 @@ export function FlashcardsPage({ user }: FlashcardsPageProps) {
 
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:3001"
-        }/api/v1/flashcards/generate`,
+        API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.GENERATE_FLASHCARDS),
         {
           method: "POST",
           headers: {

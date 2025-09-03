@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTheme } from "../../lib/theme.tsx";
 import { usePersistentState } from "../../lib/pageState.tsx";
+import { API_CONFIG } from "../../lib/api.ts";
 
 interface ChatPageProps {
   user: User;
@@ -324,7 +325,7 @@ export function ChatPage({ user }: ChatPageProps) {
 
       // Call AI service for response
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/v1/ask`,
+        API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ASK),
         {
           method: "POST",
           headers: {

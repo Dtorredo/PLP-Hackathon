@@ -17,6 +17,7 @@ import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { useTheme } from "../../lib/theme.tsx";
 import { PandaIcon } from "../ui/PandaIcon";
 import { usePersistentState } from "../../lib/pageState.tsx";
+import { API_CONFIG } from "../../lib/api.ts";
 
 interface StudyPlanTask {
   id: string;
@@ -162,9 +163,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     try {
       console.log("Loading existing plan for user:", user.id);
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:3001"
-        }/api/v1/plan/current/${user.id}`
+        API_CONFIG.getUrl(`/api/v1/plan/current/${user.id}`)
       );
 
       console.log("Response status:", response.status);
@@ -213,9 +212,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     try {
       setIsLoadingHistory(true);
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:3001"
-        }/api/v1/plan/history/${user.id}`
+        API_CONFIG.getUrl(`/api/v1/plan/history/${user.id}`)
       );
 
       if (response.ok) {
@@ -235,9 +232,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     setSelectedPlanId(planId);
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:3001"
-        }/api/v1/plan/history/${user.id}/${planId}`
+        API_CONFIG.getUrl(`/api/v1/plan/history/${user.id}/${planId}`)
       );
 
       if (response.ok) {
@@ -263,9 +258,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
     try {
       // First load the history to get the most recent plan
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:3001"
-        }/api/v1/plan/history/${user.id}`
+        API_CONFIG.getUrl(`/api/v1/plan/history/${user.id}`)
       );
 
       if (response.ok) {
@@ -389,9 +382,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
       const dailyHours = Math.round((totalDailyMinutes / 60) * 10) / 10; // Round to 1 decimal place
 
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:3001"
-        }/api/v1/plan/generate`,
+        API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.GENERATE_PLAN),
         {
           method: "POST",
           headers: {
@@ -428,9 +419,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:3001"
-        }/api/v1/plan/current/${user.id}`,
+        API_CONFIG.getUrl(`/api/v1/plan/current/${user.id}`),
         {
           method: "DELETE",
         }
@@ -492,7 +481,7 @@ export function StudyPlanPage({ user, onStateChange }: StudyPlanPageProps) {
 
     // Update progress in backend
     try {
-      await fetch("http://localhost:3001/api/v1/plan/progress", {
+      await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.UPDATE_PLAN_PROGRESS), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
