@@ -1,5 +1,10 @@
 # AI Study Buddy 🧠
 
+<video width="100%" controls>
+  <source src="mojo_video.mov" type="video/quicktime">
+  Your browser does not support the video tag.
+</video>
+
 An intelligent AI-powered study platform that creates personalized learning experiences through smart flashcards, study plans, and interactive chat-based learning.
 
 ## ✨ Key Features
