@@ -24,19 +24,23 @@ interface ChatPageProps {
   user: User;
 }
 
+interface ChatHistoryItem {
+  id: string;
+  createdAt: Date;
+  firstMessage: string;
+  allMessages: string;
+  [key: string]: unknown;
+}
+
 export function ChatPage({ user }: ChatPageProps) {
   const { theme } = useTheme();
 
   // Use persistent state for chat history
-  const [chatHistory, setChatHistory] = usePersistentState<
-    Array<{
-      id: string;
-      createdAt: Date;
-      firstMessage: string;
-      allMessages: string;
-      [key: string]: unknown;
-    }>
-  >("chat", "chatHistory", []);
+  const [chatHistory, setChatHistory] = usePersistentState<ChatHistoryItem[]>(
+    "chat",
+    "chatHistory",
+    []
+  );
 
   // Keep non-persistent state for current session
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -44,6 +48,8 @@ export function ChatPage({ user }: ChatPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [lastActivity, setLastActivity] = useState<Date>(new Date());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -235,6 +241,21 @@ export function ChatPage({ user }: ChatPageProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Session timeout effect - start new chat after 30 minutes of inactivity
+  useEffect(() => {
+    if (!currentSessionId) return;
+
+    const timeoutDuration = 30 * 60 * 1000; // 30 minutes
+    const timeoutId = setTimeout(() => {
+      const timeSinceLastActivity = Date.now() - lastActivity.getTime();
+      if (timeSinceLastActivity >= timeoutDuration) {
+        startNewChat();
+      }
+    }, timeoutDuration);
+
+    return () => clearTimeout(timeoutId);
+  }, [currentSessionId, lastActivity]);
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -268,6 +289,38 @@ export function ChatPage({ user }: ChatPageProps) {
           ts: serverTimestamp(),
         }
       );
+
+      // Update session tracking
+      setCurrentSessionId(sessionId);
+      setLastActivity(new Date());
+
+      // Update chat history immediately with the new session
+      const newHistoryItem: ChatHistoryItem = {
+        id: sessionId,
+        createdAt: new Date(),
+        firstMessage:
+          inputValue.substring(0, 50) + (inputValue.length > 50 ? "..." : ""),
+        allMessages: inputValue,
+      };
+
+      // Check if this session already exists
+      const existingIndex = chatHistory.findIndex(
+        (item: ChatHistoryItem) => item.id === sessionId
+      );
+      if (existingIndex >= 0) {
+        // Update existing session
+        const updated = [...chatHistory];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          firstMessage:
+            inputValue.substring(0, 50) + (inputValue.length > 50 ? "..." : ""),
+          allMessages: updated[existingIndex].allMessages + " " + inputValue,
+        };
+        setChatHistory(updated);
+      } else {
+        // Add new session at the beginning
+        setChatHistory([newHistoryItem, ...chatHistory]);
+      }
 
       // Call AI service for response
       const response = await fetch(
@@ -329,6 +382,19 @@ export function ChatPage({ user }: ChatPageProps) {
             ts: serverTimestamp(),
           }
         );
+
+        // Update chat history with AI response
+        const existingIndex = chatHistory.findIndex(
+          (item: ChatHistoryItem) => item.id === sessionId
+        );
+        if (existingIndex >= 0) {
+          const updated = [...chatHistory];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            allMessages: updated[existingIndex].allMessages + " " + content,
+          };
+          setChatHistory(updated);
+        }
       } else {
         throw new Error("Failed to get AI response");
       }
@@ -377,6 +443,8 @@ export function ChatPage({ user }: ChatPageProps) {
 
       setMessages(loadedMessages);
       setIsInitialized(true);
+      setCurrentSessionId(sessionId);
+      setLastActivity(new Date());
     } catch (error) {
       console.error("Error loading chat history:", error);
     } finally {
@@ -394,6 +462,8 @@ export function ChatPage({ user }: ChatPageProps) {
     };
     setMessages([welcomeMessage]);
     setIsInitialized(true);
+    setCurrentSessionId(null);
+    setLastActivity(new Date());
   };
 
   return (
@@ -661,4 +731,3 @@ export function ChatPage({ user }: ChatPageProps) {
     </div>
   );
 }
-
