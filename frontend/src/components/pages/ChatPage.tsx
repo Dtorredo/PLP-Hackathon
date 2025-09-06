@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Search, User as UserIcon } from "lucide-react";
+import { Send, Search, User as UserIcon, RefreshCw } from "lucide-react";
 import type { User, ChatMessage } from "../../lib/types";
 import { db } from "../../lib/firebase";
 import {
@@ -115,7 +115,7 @@ export function ChatPage({ user }: ChatPageProps) {
   const filteredHistoryItems = chatHistory.filter((item) => {
     if (searchQuery === "") return true;
 
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
 
     // Search in all messages content (most comprehensive)
     if (item.allMessages.toLowerCase().includes(query)) return true;
@@ -132,6 +132,14 @@ export function ChatPage({ user }: ChatPageProps) {
         .toLocaleDateString()
         .toLowerCase();
       if (dateStr.includes(query)) return true;
+    }
+
+    // Search in time (if user searches for time)
+    if (item.createdAt) {
+      const timeStr = new Date(item.createdAt)
+        .toLocaleTimeString()
+        .toLowerCase();
+      if (timeStr.includes(query)) return true;
     }
 
     return false;
@@ -272,16 +280,26 @@ export function ChatPage({ user }: ChatPageProps) {
     setIsLoading(true);
 
     try {
+      // Generate unique session ID - use current session or create new one
+      let sessionId = currentSessionId;
+      if (!sessionId) {
+        sessionId = `${user.id}-chat-${Date.now()}`;
+        setCurrentSessionId(sessionId);
+      }
+
       // Persist to Firestore: ensure session document exists then add the message
-      const sessionId = `${user.id}-chat-${new Date()
-        .toISOString()
-        .slice(0, 10)}`;
       const sessionRef = doc(db, "users", user.id, "chatSessions", sessionId);
       await setDoc(
         sessionRef,
-        { createdAt: serverTimestamp(), userId: user.id },
+        {
+          createdAt: serverTimestamp(),
+          userId: user.id,
+          lastActivity: serverTimestamp(),
+          messageCount: 1,
+        },
         { merge: true }
       );
+
       await addDoc(
         collection(db, "users", user.id, "chatSessions", sessionId, "messages"),
         {
@@ -292,7 +310,6 @@ export function ChatPage({ user }: ChatPageProps) {
       );
 
       // Update session tracking
-      setCurrentSessionId(sessionId);
       setLastActivity(new Date());
 
       // Update chat history immediately with the new session
@@ -314,6 +331,7 @@ export function ChatPage({ user }: ChatPageProps) {
         updated[existingIndex] = {
           ...updated[existingIndex],
           firstMessage:
+            updated[existingIndex].firstMessage ||
             inputValue.substring(0, 50) + (inputValue.length > 50 ? "..." : ""),
           allMessages: updated[existingIndex].allMessages + " " + inputValue,
         };
@@ -395,6 +413,17 @@ export function ChatPage({ user }: ChatPageProps) {
             allMessages: updated[existingIndex].allMessages + " " + content,
           };
           setChatHistory(updated);
+        } else {
+          // If session doesn't exist in history, add it
+          const newHistoryItem: ChatHistoryItem = {
+            id: sessionId,
+            createdAt: new Date(),
+            firstMessage:
+              inputValue.substring(0, 50) +
+              (inputValue.length > 50 ? "..." : ""),
+            allMessages: inputValue + " " + content,
+          };
+          setChatHistory([newHistoryItem, ...chatHistory]);
         }
       } else {
         throw new Error("Failed to get AI response");
@@ -402,15 +431,31 @@ export function ChatPage({ user }: ChatPageProps) {
     } catch (error) {
       console.error("Error sending message:", error);
       setIsLoading(false);
+
       // Add error message
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
+        content:
+          "Sorry, I encountered an error. Please check your connection and try again.",
         timestamp: new Date(),
         confidence: 0.5,
       };
       setMessages((prev) => [...prev, errorMessage]);
+
+      // Show user-friendly error notification
+      if (error instanceof Error) {
+        if (
+          error.message.includes("Failed to fetch") ||
+          error.message.includes("NetworkError")
+        ) {
+          errorMessage.content =
+            "Network error. Please check your internet connection and try again.";
+        } else if (error.message.includes("503")) {
+          errorMessage.content =
+            "Service temporarily unavailable. Please try again in a moment.";
+        }
+      }
     }
   };
 
@@ -442,12 +487,35 @@ export function ChatPage({ user }: ChatPageProps) {
         });
       });
 
-      setMessages(loadedMessages);
+      // If no messages found, show welcome message
+      if (loadedMessages.length === 0) {
+        const welcomeMessage: ChatMessage = {
+          id: "welcome",
+          role: "assistant",
+          content: `Hi ${user.name}! I'm your AI Study Buddy. What would you like to learn about today?`,
+          timestamp: new Date(),
+          confidence: 0.95,
+        };
+        setMessages([welcomeMessage]);
+      } else {
+        setMessages(loadedMessages);
+      }
+
       setIsInitialized(true);
       setCurrentSessionId(sessionId);
       setLastActivity(new Date());
     } catch (error) {
       console.error("Error loading chat history:", error);
+
+      // Show error message to user
+      const errorMessage: ChatMessage = {
+        id: "error",
+        role: "assistant",
+        content: "Failed to load chat history. Please try again.",
+        timestamp: new Date(),
+        confidence: 0.5,
+      };
+      setMessages([errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -463,8 +531,64 @@ export function ChatPage({ user }: ChatPageProps) {
     };
     setMessages([welcomeMessage]);
     setIsInitialized(true);
-    setCurrentSessionId(null);
+    setCurrentSessionId(null); // Clear current session to start fresh
     setLastActivity(new Date());
+  };
+
+  const refreshChatHistory = async () => {
+    try {
+      const sessionsRef = collection(db, "users", user.id, "chatSessions");
+      const q = query(sessionsRef, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+
+      // Fetch the first message for each session to display as preview
+      const history = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const sessionData = doc.data();
+          const messagesRef = collection(
+            db,
+            "users",
+            user.id,
+            "chatSessions",
+            doc.id,
+            "messages"
+          );
+          const messagesQuery = query(
+            messagesRef,
+            orderBy("ts", "asc"),
+            limit(3)
+          );
+          const messagesSnapshot = await getDocs(messagesQuery);
+
+          let firstMessage = "";
+          let allMessages = "";
+          if (!messagesSnapshot.empty) {
+            const firstMsg = messagesSnapshot.docs[0].data();
+            firstMessage = firstMsg.content || "";
+
+            // Collect all messages for better search
+            messagesSnapshot.docs.forEach((doc) => {
+              const msgData = doc.data();
+              allMessages += (msgData.content || "") + " ";
+            });
+          }
+
+          return {
+            id: doc.id,
+            createdAt: sessionData.createdAt?.toDate() || new Date(),
+            firstMessage:
+              firstMessage.substring(0, 50) +
+              (firstMessage.length > 50 ? "..." : ""),
+            allMessages: allMessages.trim(),
+            ...sessionData,
+          };
+        })
+      );
+
+      setChatHistory(history);
+    } catch (error) {
+      console.error("Error refreshing chat history:", error);
+    }
   };
 
   return (
@@ -510,17 +634,32 @@ export function ChatPage({ user }: ChatPageProps) {
                 >
                   {section}
                 </h3>
-                {searchQuery && (
-                  <span className={`text-xs ${themeClasses.textSecondary}`}>
-                    {items.length} result{items.length !== 1 ? "s" : ""}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {searchQuery && (
+                    <span className={`text-xs ${themeClasses.textSecondary}`}>
+                      {items.length} result{items.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                  <button
+                    onClick={refreshChatHistory}
+                    className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors`}
+                    title="Refresh chat history"
+                  >
+                    <RefreshCw className="w-3 h-3 text-gray-500" />
+                  </button>
+                </div>
               </div>
               <div className="space-y-1">
                 {items.map((item, index) => (
                   <div
                     key={`${section}-${index}`}
-                    className={`${themeClasses.historyItem} p-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity`}
+                    className={`${
+                      currentSessionId === item.id
+                        ? themeClasses.selectedHistoryItem
+                        : themeClasses.historyItem
+                    } p-3 rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 ${
+                      currentSessionId === item.id ? "ring-2 ring-pink-500" : ""
+                    }`}
                     onClick={() => handleHistorySelect(item.id)}
                   >
                     <p
@@ -533,6 +672,14 @@ export function ChatPage({ user }: ChatPageProps) {
                         ? new Date(item.createdAt).toLocaleDateString()
                         : "Unknown date"}
                     </p>
+                    {currentSessionId === item.id && (
+                      <div className="flex items-center mt-1">
+                        <div className="w-2 h-2 bg-pink-500 rounded-full mr-2"></div>
+                        <span className="text-xs text-pink-500 font-medium">
+                          Active
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
