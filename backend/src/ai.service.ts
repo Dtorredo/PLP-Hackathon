@@ -82,8 +82,7 @@ export class AIService {
   };
 
   constructor() {
-    const apiKey =
-      process.env.GEMINI_API_KEY || "AIzaSyAjmbLFqxETp-xrYyCZHwJ0nx6YlE-g3Jw";
+    const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey) {
       this.genAI = new GoogleGenerativeAI(apiKey);
     }

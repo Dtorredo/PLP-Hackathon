@@ -279,6 +279,13 @@ export class PaymentService {
 
   // Check if user has active subscription
   async hasActiveSubscription(userId: string): Promise<boolean> {
+    // Grant free access until the end of next year
+    const now = new Date();
+    const endDate = new Date("2027-01-01");
+    if (now < endDate) {
+      return true;
+    }
+
     const subscription = await this.getUserSubscription(userId);
     return (
       subscription?.status === "active" &&

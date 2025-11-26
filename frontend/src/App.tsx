@@ -76,7 +76,7 @@ function App() {
             subjects: [],
             topics: {},
             achievements: [],
-            flashcardHistory: [],
+            flashcardHistory: [],   
             createdAt: new Date(),
             lastActive: new Date(),
           };
